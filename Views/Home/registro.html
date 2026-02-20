@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro - Proyecto Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../CSS/estilo.css">
+</head>
+<body class="bg-primary d-flex align-items-center vh-100">
+
+    <div class="container d-flex justify-content-center">
+        <div class="card shadow-lg p-4 auth-card col-12 col-sm-8 col-md-6 col-lg-5">
+            
+            <div class="text-center mb-3">
+                <div class="logo-container mx-auto">
+                    <span class="text-muted small">KARLA PON LOGUITO</span>
+                </div>
+            </div>
+
+            <h2 class="text-center fw-bold mb-4">Crear Cuenta</h2>
+
+            <form id="registerForm">
+                <div class="form-floating mb-3">
+                    <input type="text" name="fullname" class="form-control" id="regName" placeholder="Nombre Completo" required>
+                    <label for="regName">Nombre Completo</label>
+                </div>
+
+                <div class="form-floating mb-3">
+                    <input type="email" name="email" class="form-control" id="regEmail" placeholder="correo@ejemplo.com" required>
+                    <label for="regEmail">Correo Electrónico</label>
+                </div>
+
+                <div class="form-floating mb-3">
+                    <input type="text" name="username" class="form-control" id="regUser" placeholder="Usuario" required>
+                    <label for="regUser">Nombre de Usuario</label>
+                </div>
+
+                <div class="form-floating mb-3">
+                    <input type="password" name="password" class="form-control" id="regPass" placeholder="Contraseña" required>
+                    <label for="regPass">Contraseña</label>
+                </div>
+
+                <div class="form-floating mb-4">
+                    <input type="password" class="form-control" id="regPassConfirm" placeholder="Confirmar Contraseña" required>
+                    <label for="regPassConfirm">Confirmar Contraseña</label>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 py-2 fw-bold mb-3">
+                    REGISTRARME
+                </button>
+                <div class="d-flex align-items-center my-3">
+               <hr class="flex-grow-1">
+               <span class="mx-2 text-muted small">O REGÍSTRATE CON</span>
+               <hr class="flex-grow-1">
+              </div>
+
+           <div class="d-flex justify-content-center">
+             <div id="google-register-btn"></div>
+</div>
+            </form>
+
+            <div class="text-center mt-3">
+                <p class="small text-muted">¿Ya tienes cuenta? <a href="login.html" class="fw-bold">Inicia Sesión</a></p>
+            </div>
+        </div>
+    </div>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="../../wwwroot/js/alejandro2.js"></script>
+</body>
+</html>

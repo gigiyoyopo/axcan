@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Proyecto Pro</title>
+
+   <!--aca se conecta a la maquetacion bootstrap para ahorrarnos la chinga de diseñar tanto css-->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="../CSS/estilo.css">
+</head>
+<body class="bg-primary d-flex align-items-center vh-100">
+
+    <div class="container d-flex justify-content-center">
+        <div class="card shadow-lg p-4 auth-card col-12 col-sm-8 col-md-6 col-lg-4">
+            
+            <div class="text-center mb-4">
+                <div class="logo-container mx-auto">
+                    <span class="text-muted small">KARLA PON LOGUITO</span>
+                </div>
+            </div>
+
+            <h2 class="text-center fw-bold mb-4">Bienvenido</h2>
+
+            <form id="loginForm">
+                <div class="form-floating mb-3">
+                    <input type="text" name="username" class="form-control" id="userInput" placeholder="Usuario" required>
+                    <label for="userInput">Usuario</label>
+                </div>
+
+                <div class="form-floating mb-3">
+                    <input type="password" name="password" class="form-control" id="passInput" placeholder="Contraseña" required>
+                    <label for="passInput">Contraseña</label>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 py-2 fw-bold mb-3">
+                    INICIAR SESIÓN
+                </button>
+
+                <div class="d-flex align-items-center my-3">
+                    <hr class="flex-grow-1">
+                    <span class="mx-2 text-muted small">O CONTINÚA CON</span>
+                    <hr class="flex-grow-1">
+                </div>
+
+                <div class="d-flex justify-content-center">
+                    <div id="google-login-btn"></div>
+                </div>
+            </form>
+
+            <div class="text-center mt-4">
+                <p class="small text-muted">¿No tienes una cuenta? <a href="registro.html" class="fw-bold">Regístrate</a></p>
+            </div>
+        </div>
+    </div>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <script src="../../wwwroot/js/alejandro.js"></script>
+</body>
+</html>
