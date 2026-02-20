@@ -51,3 +51,6 @@ window.onload = function () {
         alert("Validando datos en PostgreSQL...");
     });
 };
+
+
+//ACA EMPIEZA LOGICA DEL INDEX

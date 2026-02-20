@@ -1,0 +1,17 @@
+/*KARLA ESTE ES MUY IMPORTANTE PORQUE HACER QUE LAS IMAGENES DEL CARROUSEL SEAN IGUALES Y NO SE SALGAS Y DEFORME TODO*/
+.banner-img {
+    height: 250px; 
+    object-fit: cover; 
+    object-position: center;
+}
+
+/*  (fade) */
+.carousel-fade .carousel-item {
+    transition-duration: 1.5s; 
+    transition-property: opacity;
+}
+
+/* Evita saltos bruscos si las imágenes cargan lento */
+.carousel-inner {
+    background-color: #f8f9fa; 
+}
