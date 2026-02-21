@@ -2,14 +2,14 @@
   "version": 2,
   "builds": [
     {
-      "src": "axcan/axcan.csproj", 
+      "src": "axcan.csproj",
       "use": "vercel-dotnet"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "axcan/axcan.csproj"
+      "dest": "axcan.csproj"
     }
   ]
 }
