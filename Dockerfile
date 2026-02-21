@@ -1,23 +1,23 @@
-# Etapa 1: Compilación
+# ETAPA 1: Compilación
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /source
 
-# Copiamos la solución y el proyecto buscando la carpeta axcan
+# Copiar archivos .sln y .csproj (Ajustado a tu estructura)
 COPY *.sln .
 COPY axcan/*.csproj ./axcan/
 RUN dotnet restore
 
-# Copiamos todo lo demás y publicamos
+# Copiar todo el código y publicar
 COPY . .
 WORKDIR /source/axcan
 RUN dotnet publish -c Release -o /app/out
 
-# Etapa 2: Runtime (Ejecución)
+# ETAPA 2: Ejecución (Runtime)
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
 COPY --from=build /app/out .
 
-# IMPORTANTE: Configurar el puerto para Render
+# Configuración de puerto para Render
 ENV ASPNETCORE_URLS=http://+:10000
 EXPOSE 10000
 
