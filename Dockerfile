@@ -1,24 +1,25 @@
-# Capa de compilación
+# Capa de compilación (SDK de .NET 8)
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-WORKDIR /source
+WORKDIR /app
 
-# Copiar archivos y restaurar dependencias
+# Copiamos los archivos del proyecto para restaurar
 COPY *.sln .
 COPY axcan/*.csproj ./axcan/
 RUN dotnet restore
 
-# Copiar todo y publicar
+# Copiamos todo lo demás y publicamos
 COPY . .
-WORKDIR /source/axcan
-RUN dotnet publish -c Release -o /app/out
+WORKDIR /app/axcan
+RUN dotnet publish -c Release -o /out
 
-# Capa de ejecución
+# Capa de ejecución (Runtime)
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
-COPY --from=build /app/out .
+COPY --from=build /out .
 
-# Configurar puerto para Render
+# Configuración del puerto para Render
 ENV ASPNETCORE_URLS=http://+:10000
 EXPOSE 10000
 
+# Nombre de tu archivo de salida (verifica que sea axcan.dll)
 ENTRYPOINT ["dotnet", "axcan.dll"]
