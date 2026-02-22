@@ -1,24 +1,24 @@
-# ETAPA DE COMPILACIÓN
+# 1. SDK para compilar
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-WORKDIR /source
+WORKDIR /app
 
-# Copiamos todo el contenido del repo
+# Copia TODO el contenido del repo
 COPY . .
 
-# Restauramos las dependencias
-RUN dotnet restore *.sln
+# Restaura las librerías 
+RUN dotnet restore
 
-# Publicamosl proyecto apuntando a la carpeta en minúsculas
-RUN dotnet publish "axcan/axcan.csproj" -c Release -o /app/out
+# Compila apuntando a la carpeta en minúsculas
+RUN dotnet publish "axcan/axcan.csproj" -c Release -o /out
 
-# ETAPA DE EJECUCIÓN
+# 2. Runtime para que la app corra
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
-COPY --from=build /app/out .
+COPY --from=build /out .
 
-# Configuración de puerto para Render
+# Render usa el puerto 10000 por defecto
 ENV ASPNETCORE_URLS=http://+:10000
 EXPOSE 10000
 
-# El nombre del archivo de salida
+# El ejecutable final
 ENTRYPOINT ["dotnet", "axcan.dll"]
