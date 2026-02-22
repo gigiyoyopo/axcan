@@ -1,27 +1,27 @@
-# ETAPA 1: Compilación
+# 1. SDK para compilar
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-WORKDIR /source
+WORKDIR /app
 
-# 1. Copiamos la solución
-COPY *.sln .
+# Copiar el .sln de la raíz
+COPY Axcan.sln .
 
-# 2. Copiamos el proyecto respetando la MAYÚSCULA de la carpeta Axcan
-COPY Axcan/*.csproj ./Axcan/
+# Copiar el .csproj respetando la MAYÚSCULA de la carpeta
+COPY Axcan/Axcan.csproj ./Axcan/
 RUN dotnet restore
 
-# 3. Copiamos todo lo demás y publicamos
+# Copiar todo y publicar
 COPY . .
-WORKDIR /source/Axcan
-RUN dotnet publish -c Release -o /app/out
+WORKDIR /app/Axcan
+RUN dotnet publish -c Release -o /out
 
-# ETAPA 2: Ejecución
+# 2. Runtime para correr la app
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
-COPY --from=build /app/out .
+COPY --from=build /out .
 
-# Configuración de puerto para Render
+# Puerto Render
 ENV ASPNETCORE_URLS=http://+:10000
 EXPOSE 10000
 
-# El nombre del archivo de salida también lleva la mayúscula
+# El nombre del DLL debe llevar la A mayúscula
 ENTRYPOINT ["dotnet", "Axcan.dll"]
