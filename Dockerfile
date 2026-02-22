@@ -4,7 +4,7 @@ WORKDIR /app
 
 # Copia todo y restaura
 COPY . .
-RUN dotnet restore
+RUN dotnet restore "axcan.csproj"
 
 # Publica el proyecto (asegúrate que el nombre del csproj sea correcto)
 RUN dotnet publish "axcan.csproj" -c Release -o /out
