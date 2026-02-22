@@ -8,7 +8,7 @@ RUN dotnet restore
 
 # Copiamos TODO y publicamos
 COPY . ./
-RUN dotnet publish -c Release -o /out
+RUN dotnet publish "axcan.csproj" -c Release -o /out
 
 # 2. Runtime para correr la app
 FROM mcr.microsoft.com/dotnet/aspnet:9.0
