@@ -1,15 +1,17 @@
 # 1. SDK para compilar
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+# ... (etapa build anterior)
 WORKDIR /app
-
-# Copia TODO el contenido del repo
 COPY . .
 
-# Restaura las librerías 
+# Ahora sí, el restore va a funcionar porque el archivo XML ya está bien
 RUN dotnet restore
 
-# Compila apuntando a la carpeta en minúsculas
-RUN dotnet publish "axcan/axcan.csproj" -c Release -o /out
+# Publicamos (si el archivo está en la raíz, no necesitas poner la carpeta)
+RUN dotnet publish -c Release -o /out
+# ...
+
+
 
 # 2. Runtime para que la app corra
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
