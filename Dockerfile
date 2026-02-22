@@ -1,18 +1,25 @@
-# Usa el SDK 9 para que reconozca MapStaticAssets
+# 1. SDK para compilar
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /app
 
-# Copia todo y restaura
-COPY . .
-RUN dotnet restore "axcan.csproj"
+# Copiamos el archivo de proyecto y restauramos
+COPY *.csproj ./
+RUN dotnet restore
 
-# Publica el proyecto (asegúrate que el nombre del csproj sea correcto)
-RUN dotnet publish "axcan.csproj" -c Release -o /out
+# Copiamos TODO y publicamos
+COPY . ./
+RUN dotnet publish -c Release -o /out
 
-# Runtime de .NET 9
+# 2. Runtime para correr la app
 FROM mcr.microsoft.com/dotnet/aspnet:9.0
 WORKDIR /app
+
+# Copiamos lo que salió del publish
 COPY --from=build /out .
+
+COPY --from=build /app/Views ./Views
+COPY --from=build /app/wwwroot ./wwwroot
+# ----------------------------------------------------
 
 # Configuración de puerto para Render
 ENV ASPNETCORE_URLS=http://+:10000
