@@ -2,26 +2,26 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /app
 
-# Copiamos el csproj específicamente primero para aprovechar la caché
+# Copiamos el proyecto y restauramos
 COPY axcan.csproj ./
 RUN dotnet restore "axcan.csproj"
 
-# Copiamos todo lo demás
+# Copiamos todo y publicamos
 COPY . ./
-
-# AQUÍ ESTÁ EL TRUCO: Le decimos exactamente qué archivo publicar
 RUN dotnet publish "axcan.csproj" -c Release -o /out
 
 # 2. Runtime para correr la app
 FROM mcr.microsoft.com/dotnet/aspnet:9.0
 WORKDIR /app
 
-# Copiamos lo que salió del publish
+# Copiamos los binarios (lo que hace que la app funcione)
 COPY --from=build /out .
 
-# Copiamos las vistas y los archivos estáticos para que no dé el error de "Index not found"
+# --- AQUÍ ESTÁ EL TRUCO: COPIAR LAS VISTAS MANUALMENTE ---
+# Esto asegura que la carpeta Views y wwwroot existan en el servidor
 COPY --from=build /app/Views ./Views
 COPY --from=build /app/wwwroot ./wwwroot
+# --------------------------------------------------------
 
 # Configuración de puerto para Render
 ENV ASPNETCORE_URLS=http://+:10000
