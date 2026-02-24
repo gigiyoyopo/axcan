@@ -1,56 +1,62 @@
-// CONFIGURACIÓN
-
+// 1. CONFIGURACIÓN INICIAL
+const SUPABASE_URL = "https://tu-proyecto.supabase.co"; // <--- CAMBIA ESTO
+const SUPABASE_ANON_KEY = "tu-anon-key-aqui";        // <--- CAMBIA ESTO
 const CLIENT_ID = "1058925398660-p306po9ltjithuikrgpo7oapi3j7vmb1.apps.googleusercontent.com";
 
-// token de Google
-function handleGoogleResponse(response) {
-    console.log("Sesión iniciada con Google");
-    
-    //  validar en la base de datos
-    const payload = {
-        token: response.credential,
-        provider: 'google'
-    };
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    console.log("Datos para enviar al Backend:", payload);
-    // Aquí irá tu fetch('/api/login-google', ...)
+// 2. FUNCIÓN PARA RECIBIR EL TOKEN DE GOOGLE
+async function handleGoogleResponse(response) {
+    console.log("Token recibido de Google. Autenticando en Supabase...");
+
+    const { data, error } = await supabase.auth.signInWithIdToken({
+        provider: 'google',
+        token: response.credential,
+    });
+
+    if (error) {
+        console.error("Error de Supabase:", error.message);
+        alert("Error al vincular con Supabase: " + error.message);
+    } else {
+        console.log("¡Login exitoso!", data);
+        // Redirigir al Index de .NET
+        window.location.href = "/Home/Index";
+    }
 }
 
+// 3. INICIALIZACIÓN AL CARGAR LA PÁGINA
 window.onload = function () {
-    //  Inicializar Google Auth
+    // Inicializar Google
     google.accounts.id.initialize({
         client_id: CLIENT_ID,
         callback: handleGoogleResponse
     });
 
-    // botón de Google
+    // Renderizar el botón en el div con id "google-login-btn"
     google.accounts.id.renderButton(
         document.getElementById("google-login-btn"),
-        { theme: "outline", size: "large", width: "100%" }
+        { 
+            theme: "outline", 
+            size: "large", 
+            width: "100%",
+            text: "signin_with",
+            shape: "pill"
+        }
     );
 
-    //  Formulario Manual
+    // LÓGICA DEL FORMULARIO MANUAL (POSTGRESQL DIRECTO)
     const loginForm = document.getElementById('loginForm');
-    
-    loginForm.addEventListener('submit', function(e) {
-        e.preventDefault();
+    if(loginForm) {
+        loginForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const user = document.getElementById('userInput').value;
+            const pass = document.getElementById('passInput').value;
 
-        // Recolectar 
-        const user = document.getElementById('userInput').value;
-        const pass = document.getElementById('passInput').value;
-
-        // KATTO SE ESTA HACIENDO PENDEJO CON LA BD
-        const loginData = {
-            username: user,
-            password: pass
-        };
-
-        console.log("Enviando credenciales a la base de datos:", loginData);
-        
-        // Simulasao
-        alert("Validando datos en PostgreSQL...");
-    });
+            console.log("Intentando login manual para:", user);
+            
+            // Aquí podrías usar supabase.auth.signInWithPassword si usas el Auth de Supabase
+            // O un fetch a tu API de .NET si validas tú mismo en la BD
+            alert("Validando credenciales en PostgreSQL...");
+        });
+    }
 };
-
-
-//ACA EMPIEZA LOGICA DEL INDEX
