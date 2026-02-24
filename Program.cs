@@ -20,5 +20,13 @@ app.UseStaticFiles();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
-  
+  app.MapGet("/chisme", () => {
+    try {
+        var root = System.IO.Directory.GetCurrentDirectory();
+        var files = System.IO.Directory.GetFiles(root, "*", System.IO.SearchOption.AllDirectories);
+        return "ARCHIVOS EN EL SERVIDOR:\n\n" + string.Join("\n", files);
+    } catch (System.Exception ex) {
+        return "Error leyendo archivos: " + ex.Message;
+    }
+});
 app.Run();
