@@ -7,7 +7,7 @@ namespace axcan.Controllers
         // 1. Pantalla de Inicio (Carrousel)
         public IActionResult Index()
         {
-            return View();
+          return RedirectToAction("Admin");
         }
 
         // 2. Pantalla de Login (Nuestra nueva pantalla principal)
@@ -33,10 +33,11 @@ namespace axcan.Controllers
         {
             return View();
         }
-     [Route("admin-panel")] // Esto hace que la URL sea: axcan.onrender.com/admin-panel
+// Esto obliga a que si escribes axcan.onrender.com/admin entres directo
+[Route("admin")]
 public IActionResult Admin()
 {
-    return View("~/Views/Home/Admin.cshtml"); // Le decimos la ruta exacta del archivo
+    // Usamos la ruta completa para que .NET no se pierda
+    return View("~/Views/Home/Admin.cshtml");
 }
-    }
-}
+    }}
