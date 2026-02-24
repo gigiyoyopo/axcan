@@ -1,27 +1,28 @@
 # 1. SDK para compilar
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
-WORKDIR /app
+WORKDIR /src
 
-# Copiamos el proyecto y restauramos
-COPY axcan.csproj ./
+# Copiamos todo el contenido al contenedor
+COPY . .
+
+# ENTRAMOS a la carpeta real del proyecto donde está el .csproj
+WORKDIR "/src/axcan"
+
+# Restauramos y publicamos desde la carpeta interna
 RUN dotnet restore "axcan.csproj"
-
-# Copiamos todo y publicamos
-COPY . ./
 RUN dotnet publish "axcan.csproj" -c Release -o /out
 
 # 2. Runtime para correr la app
 FROM mcr.microsoft.com/dotnet/aspnet:9.0
 WORKDIR /app
 
-# Copiamos los binarios (lo que hace que la app funcione)
+# Copiamos lo publicado
 COPY --from=build /out .
 
-# --- AQUÍ ESTÁ EL TRUCO: COPIAR LAS VISTAS MANUALMENTE ---
-# Esto asegura que la carpeta Views y wwwroot existan en el servidor
-COPY --from=build /app/Views ./Views
-COPY --from=build /app/wwwroot ./wwwroot
-# --------------------------------------------------------
+# FORZAMOS la copia de las vistas desde la ruta correcta
+# (Ajustando a la estructura anidada que vi en tus fotos)
+COPY --from=build /src/axcan/Views ./Views
+COPY --from=build /src/axcan/wwwroot ./wwwroot
 
 # Configuración de puerto para Render
 ENV ASPNETCORE_URLS=http://+:10000
