@@ -1,6 +1,6 @@
 // 1. CONFIGURACIÓN INICIAL
-const SUPABASE_URL = "https://tu-proyecto.supabase.co"; // <--- CAMBIA ESTO
-const SUPABASE_ANON_KEY = "tu-anon-key-aqui";        // <--- CAMBIA ESTO
+const SUPABASE_URL = "https://ulrgujabfocyvndutqen.supabase.co"; 
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVscmd1amFiZm9jeXZuZHV0cWVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2MzQ3NzUsImV4cCI6MjA4NzIxMDc3NX0.CoXZ4NNH41rst3CNXH5WC6e2kHBZX-o1AqHReg2VYXU";        
 const CLIENT_ID = "1058925398660-p306po9ltjithuikrgpo7oapi3j7vmb1.apps.googleusercontent.com";
 
 const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
