@@ -1,7 +1,7 @@
 // 1. CONFIGURACIÓN INICIAL
 const SUPABASE_URL = "https://tu-proyecto.supabase.co"; // <--- CAMBIA ESTO
 const SUPABASE_ANON_KEY = "tu-anon-key-aqui";        // <--- CAMBIA ESTO
-const CLIENT_ID = "1058925398660-p306po9ltjithuikrgpo7oapi3j7vmb1.apps.googleusercontent.com";
+const CLIENT_ID = "1058925398660-ovi8nq4pj2a0qtn7kmelganfug5lu008.apps.googleusercontent.com";
 
 const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
