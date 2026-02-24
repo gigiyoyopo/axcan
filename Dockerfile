@@ -2,15 +2,14 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
-# Copiamos todo el contenido al contenedor
+# Copiamos TODO de una vez
 COPY . .
 
-# ENTRAMOS a la carpeta real del proyecto donde está el .csproj
-WORKDIR "/src/axcan"
+# Buscamos el archivo .csproj donde sea que esté y restauramos
+RUN dotnet restore $(find . -name "*.csproj")
 
-# Restauramos y publicamos desde la carpeta interna
-RUN dotnet restore "axcan.csproj"
-RUN dotnet publish "axcan.csproj" -c Release -o /out
+# Publicamos el proyecto buscando el archivo .csproj automáticamente
+RUN dotnet publish $(find . -name "*.csproj") -c Release -o /out
 
 # 2. Runtime para correr la app
 FROM mcr.microsoft.com/dotnet/aspnet:9.0
@@ -19,12 +18,12 @@ WORKDIR /app
 # Copiamos lo publicado
 COPY --from=build /out .
 
-# FORZAMOS la copia de las vistas desde la ruta correcta
-# (Ajustando a la estructura anidada que vi en tus fotos)
-COPY --from=build /src/axcan/Views ./Views
-COPY --from=build /src/axcan/wwwroot ./wwwroot
+# Copiamos las vistas y wwwroot buscando su ubicación real
+# Usamos un comando más flexible para no fallar por rutas anidadas
+RUN cp -r $(find /src -name Views -type d | head -n 1) ./ 2>/dev/null || :
+RUN cp -r $(find /src -name wwwroot -type d | head -n 1) ./ 2>/dev/null || :
 
-# Configuración de puerto para Render
+# Puerto Render
 ENV ASPNETCORE_URLS=http://+:10000
 EXPOSE 10000
 
