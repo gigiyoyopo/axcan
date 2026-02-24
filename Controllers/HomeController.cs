@@ -1,25 +1,37 @@
-using System.Diagnostics;
-using axcan.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace axcan.Controllers
 {
     public class HomeController : Controller
     {
+        // 1. Pantalla de Inicio (Carrousel)
         public IActionResult Index()
         {
             return View();
         }
 
-        public IActionResult Privacy()
+        // 2. Pantalla de Login (Nuestra nueva pantalla principal)
+        public IActionResult login()
         {
             return View();
         }
 
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
+        // 3. Pantalla de Registro
+        public IActionResult registro()
         {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            return View();
+        }
+
+        // 4. Pantalla de Acerca De
+        public IActionResult acercade()
+        {
+            return View();
+        }
+
+        // 5. Pantalla de Registro de Negocio
+        public IActionResult registronegocio()
+        {
+            return View();
         }
     }
 }
