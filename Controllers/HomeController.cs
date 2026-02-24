@@ -33,5 +33,10 @@ namespace axcan.Controllers
         {
             return View();
         }
+     [Route("admin-panel")] // Esto hace que la URL sea: axcan.onrender.com/admin-panel
+public IActionResult Admin()
+{
+    return View("~/Views/Home/Admin.cshtml"); // Le decimos la ruta exacta del archivo
+}
     }
 }
