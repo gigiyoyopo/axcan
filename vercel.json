@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "axcan/axcan.csproj",
+      "use": "vercel-dotnet@0.6.1"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "axcan/axcan.csproj"
+    }
+  ]
+}
