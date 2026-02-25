@@ -1,0 +1,93 @@
+.reviews-module {
+    background: #223050;
+    padding: 30px;
+    border-radius: 15px;
+    color: white;
+    margin-top: 30px;
+}
+
+.reviews-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.reviews-header h2 {
+    color: #3b82f6;
+}
+
+.average-box {
+    text-align: right;
+}
+
+#averageValue {
+    font-size: 32px;
+    font-weight: bold;
+    color: #3b82f6;
+}
+
+.review-form {
+    background: #1e293b;
+    padding: 20px;
+    border-radius: 12px;
+    margin-top: 20px;
+}
+
+.review-form input,
+.review-form textarea,
+.review-form select {
+    width: 100%;
+    margin-bottom: 15px;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+}
+
+.star-rating span {
+    font-size: 32px;
+    cursor: pointer;
+    color: #334155;
+    transition: 0.2s;
+}
+
+.star-rating span.active,
+.star-rating span:hover {
+    color: #3b82f6;
+    transform: scale(1.1);
+}
+
+button {
+    background: #2563eb;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+button:hover {
+    background: #1d4ed8;
+}
+
+.review-card {
+    background: #37537f;
+    padding: 15px;
+    border-radius: 10px;
+    margin-top: 15px;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.review-card .stars {
+    color: #3b82f6;
+    margin-bottom: 5px;
+}
+
+.filter-box {
+    margin-top: 20px;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
