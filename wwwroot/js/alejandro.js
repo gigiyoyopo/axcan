@@ -6,7 +6,7 @@ const CLIENT_ID = "1058925398660-p306po9ltjithuikrgpo7oapi3j7vmb1.apps.googleuse
 const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // 2. FUNCIÓN PARA RECIBIR EL TOKEN DE GOOGLE
-async function handleGoogleResponse(response) {
+async function handleGoogleResponse(response)  {
     console.log("Token recibido de Google. Autenticando en Supabase...");
 
     const { data, error } = await supabase.auth.signInWithIdToken({
@@ -59,4 +59,18 @@ window.onload = function () {
             alert("Validando credenciales en PostgreSQL...");
         });
     }
+    //el guardia
+    document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById('registerForm');
+    
+    form.addEventListener('submit', function (e) {
+        const pass = document.getElementById('regPass').value;
+        const confirm = document.getElementById('regPassConfirm').value;
+
+        if (pass !== confirm) {
+            e.preventDefault(); // Detiene el envío
+            alert("¡Las contraseñas no coinciden, cawn! Chécalo bien.");
+        }
+    });
+});
 };
