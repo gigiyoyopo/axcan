@@ -52,35 +52,40 @@ namespace axcan.Controllers
 [HttpPost]
 public async Task<IActionResult> ProcesarRegistro(string nombre, string apellido_paterno, string apellido_materno, string email, string username, string password)
 {
-    if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
+    // 1. Validación rápida
+    if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password) || string.IsNullOrEmpty(nombre))
     {
-        ViewBag.Error = "Datos incompletos, cawn.";
+        ViewBag.Error = "llena todos los campos.";
         return View("registro");
     }
 
     try
     {
+        // 2. Creamos el objeto Usuario con los campos exactos de tu SQL
         var nuevoUsuario = new Usuario
         {
             nombre = nombre,
             apellido_paterno = apellido_paterno,
             apellido_materno = apellido_materno,
-            correo = email,
+            correo = email, // Tu SQL usa 'correo'
             username = username,
             password = password,
-            rol = "cliente" // El ENUM de tu base de datos
+            rol = "cliente", // El valor del ENUM en minúsculas
+            fecha_registro = DateTime.Now
         };
 
+        // 3. Guardar en Supabase
         _context.usuarios.Add(nuevoUsuario);
         await _context.SaveChangesAsync();
 
+        TempData["Success"] = "¡Ya estás registrado! Inicia sesión.";
         return RedirectToAction("login");
     }
     catch (Exception ex)
     {
+        // Esto te dirá qué falló específicamente (ej. correo repetido)
         ViewBag.Error = "Error: " + (ex.InnerException?.Message ?? ex.Message);
         return View("registro");
     }
-}
-    }
+}}
 }
