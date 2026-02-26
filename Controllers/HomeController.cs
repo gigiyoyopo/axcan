@@ -1,43 +1,86 @@
 using Microsoft.AspNetCore.Mvc;
+using axcan.Data; // Asegúrate que este sea el namespace de tu DbContext
+using axcan.Models; // Asegúrate que este sea el namespace de tus modelos
+using Microsoft.EntityFrameworkCore;
 
 namespace axcan.Controllers
 {
     public class HomeController : Controller
     {
-        // 1. Pantalla de Inicio (Carrousel)
-        public IActionResult Index()
+        // 1. Inyectamos el contexto de la base de datos
+        private readonly ApplicationDbContext _context;
+
+        public HomeController(ApplicationDbContext context)
         {
-          return RedirectToAction("Admin");
+            _context = context;
         }
 
-        // 2. Pantalla de Login (Nuestra nueva pantalla principal)
+        // --- MÉTODOS DE VISTA ---
+
+        public IActionResult Index()
+        {
+            return View();
+        }
+
         public IActionResult login()
         {
             return View();
         }
 
-        // 3. Pantalla de Registro
         public IActionResult registro()
         {
             return View();
         }
 
-        // 4. Pantalla de Acerca De
         public IActionResult acercade()
         {
             return View();
         }
 
-        // 5. Pantalla de Registro de Negocio
         public IActionResult registronegocio()
         {
             return View();
         }
-// Esto obliga a que si escribes axcan.onrender.com/admin entres directo
-[Route("admin")]
-public IActionResult Admin()
+
+        [Route("admin")]
+        public IActionResult Admin()
+        {
+            return View();
+        }
+
+        // --- LÓGICA DE REGISTRO ---
+[HttpPost]
+public async Task<IActionResult> ProcesarRegistro(string nombre, string apellido_paterno, string apellido_materno, string email, string username, string password)
 {
-    // Usamos la ruta completa para que .NET no se pierda
-    return View("~/Views/Home/Admin.cshtml");
+    if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
+    {
+        ViewBag.Error = "Datos incompletos, cawn.";
+        return View("registro");
+    }
+
+    try
+    {
+        var nuevoUsuario = new Usuario
+        {
+            nombre = nombre,
+            apellido_paterno = apellido_paterno,
+            apellido_materno = apellido_materno,
+            correo = email,
+            username = username,
+            password = password,
+            rol = "cliente" // El ENUM de tu base de datos
+        };
+
+        _context.usuarios.Add(nuevoUsuario);
+        await _context.SaveChangesAsync();
+
+        return RedirectToAction("login");
+    }
+    catch (Exception ex)
+    {
+        ViewBag.Error = "Error: " + (ex.InnerException?.Message ?? ex.Message);
+        return View("registro");
+    }
 }
-    }}
+    }
+}
