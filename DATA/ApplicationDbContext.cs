@@ -5,18 +5,23 @@ namespace axcan.Data
 {
     public class ApplicationDbContext : DbContext
     {
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-{
-    modelBuilder.Entity<Usuario>()
-        .ToTable("usuarios", schema: "public"); // Forzamos el nombre en minúsculas
-
-    // Si te da lata el ENUM de 'tipo_rol', esto lo arregla:
-    modelBuilder.HasPostgresEnum<tipo_rol>(); 
-}
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-            : base(options) { }
+            : base(options) 
+        { 
+        }
 
-        public DbSet<Usuario> usuarios { get; set; } // Nombre en minúscula igual que en Supabase
+        // Esta es tu tabla en la base de datos
+        public DbSet<Usuario> usuarios { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            // Forzamos a que EF busque la tabla 'usuarios' en el esquema 'public'
+            modelBuilder.Entity<Usuario>()
+                .ToTable("usuarios", schema: "public");
+
+            // Nota: No incluimos el mapeo del ENUM 'tipo_rol' aquí 
+            // para evitar errores de compilación si no existe la clase en C#.
+            // El campo 'rol' en el modelo Usuario se tratará como un string común.
+        }
     }
-    
 }
