@@ -1,8 +1,12 @@
+@{
+    Layout = null;
+}
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Módulo de Reseñas, prueba</title>
+    <title>Módulo de Reseñas</title>
     <link rel="stylesheet" href="reviews.css">
 </head>
 <body>
@@ -13,12 +17,21 @@
         <h2>Reseñas del Negocio</h2>
 
         <div class="average-box">
-            <span id="averageValue">0.0</span>
-            <div id="averageStars" class="stars-display"></div>
-            <small id="totalReviews">(0 reseñas)</small>
+            <h3 id="averageValue">0.0</h3>
+            <div id="averageStars"></div>
+            <p id="totalReviews">(0 reseñas)</p>
         </div>
     </div>
 
+    <!-- reportar-->
+    <div class="report-box">
+        <h3>Reportar negocio</h3>
+        <textarea id="reportComment" placeholder="Describe el problema..."></textarea>
+        <button onclick="reportBusiness()">Enviar Reporte</button>
+    </div>
+
+
+    <!-- Formulario par reseña  -->
     <div class="review-form">
         <h3>Deja tu reseña</h3>
 
@@ -32,15 +45,18 @@
             <span data-value="5">★</span>
         </div>
 
-        <textarea id="comment" placeholder="Escribe tu comentario..."></textarea>
+        <textarea id="reviewComment" placeholder="Escribe tu comentario..."></textarea>
 
         <button onclick="addReview()">Publicar Reseña</button>
     </div>
 
+
+    <!--- Filtro de estrellitas-->
+
     <div class="filter-box">
         <label>Filtrar por estrellas:</label>
         <select id="filterStars" onchange="filterReviews()">
-            <option value="0">Todas</option>
+            <option value="0"> Todas</option>
             <option value="5">5 estrellas</option>
             <option value="4">4 estrellas</option>
             <option value="3">3 estrellas</option>
