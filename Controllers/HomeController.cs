@@ -49,45 +49,38 @@ namespace axcan.Controllers
         }
 
         // --- LÓGICA DE REGISTRO ---
+[HttpPost]
+public async Task<IActionResult> ProcesarRegistro(string nombre, string apellido_paterno, string apellido_materno, string email, string username, string password)
+{
+    if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
+    {
+        ViewBag.Error = "Datos incompletos, cawn.";
+        return View("registro");
+    }
 
-        [HttpPost]
-        public async Task<IActionResult> ProcesarRegistro(string fullname, string email, string username, string password)
+    try
+    {
+        var nuevoUsuario = new Usuario
         {
-            // Validar que no lleguen vacíos
-            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password) || string.IsNullOrEmpty(fullname))
-            {
-                ViewBag.Error = "No dejes campos vacíos, cawn.";
-                return View("registro");
-            }
+            nombre = nombre,
+            apellido_paterno = apellido_paterno,
+            apellido_materno = apellido_materno,
+            correo = email,
+            username = username,
+            password = password,
+            rol = "cliente" // El ENUM de tu base de datos
+        };
 
-            try
-            {
-                // 2. Creamos el objeto con el modelo 'Usuario' (el que acordamos)
-                var nuevoUsuario = new Usuario
-                {
-                    fullname = fullname,
-                    email = email,
-                    username = username,
-                    password = password, // En el futuro usaremos cifrado
-                    rol = "Cliente",
-                    created_at = DateTime.UtcNow
-                };
+        _context.usuarios.Add(nuevoUsuario);
+        await _context.SaveChangesAsync();
 
-                // 3. Agregar a la tabla 'usuarios' en Supabase
-                // OJO: Asegúrate que en tu ApplicationDbContext tengas: public DbSet<Usuario> usuarios { get; set; }
-                _context.usuarios.Add(nuevoUsuario);
-                await _context.SaveChangesAsync();
-
-                // 4. Éxito: Mandar al login
-                TempData["Success"] = "¡Registro exitoso! Ya eres parte de la manada AXCAN.";
-                return RedirectToAction("login");
-            }
-            catch (Exception ex)
-            {
-                // Si sale error (ej. correo duplicado), lo atrapamos aquí
-                ViewBag.Error = "Error al conectar con Supabase: " + ex.Message;
-                return View("registro");
-            }
-        }
+        return RedirectToAction("login");
+    }
+    catch (Exception ex)
+    {
+        ViewBag.Error = "Error: " + (ex.InnerException?.Message ?? ex.Message);
+        return View("registro");
+    }
+}
     }
 }

@@ -1,22 +1,24 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace axcan.Models
 {
+    [Table("usuarios", Schema = "public")]
     public class Usuario
     {
         [Key]
-        public int Id { get; set; }
+        public int id_usuario { get; set; } // En tu SQL es id_usuario, no id
         
-        [Required]
-        public string NombreCompleto { get; set; } = string.Empty;
+        public string username { get; set; }
+        public string password { get; set; }
+        public string correo { get; set; }
+        public string nombre { get; set; }
+        public string apellido_paterno { get; set; }
+        public string apellido_materno { get; set; }
         
-        [Required]
-        public string Email { get; set; } = string.Empty;
+        [Column(TypeName = "tipo_rol")] // Tu ENUM personalizado
+        public string rol { get; set; } = "cliente"; 
         
-        [Required]
-        public string UserName { get; set; } = string.Empty;
-        
-        [Required]
-        public string Password { get; set; } = string.Empty; // En el futuro le metemos Hash, por ahora así para que jale
+        public DateTime fecha_registro { get; set; } = DateTime.Now;
     }
 }

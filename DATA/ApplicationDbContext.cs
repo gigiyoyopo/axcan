@@ -6,10 +6,8 @@ namespace axcan.Data
     public class ApplicationDbContext : DbContext
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-            : base(options)
-        {
-        }
+            : base(options) { }
 
-        public DbSet<Usuario> Usuarios { get; set; } // Aquí vive tu tabla de la base de datos
+        public DbSet<Usuario> usuarios { get; set; } // Nombre en minúscula igual que en Supabase
     }
 }
