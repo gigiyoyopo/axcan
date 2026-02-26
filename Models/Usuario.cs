@@ -7,16 +7,16 @@ namespace axcan.Models
     public class Usuario
     {
         [Key]
-        public int id_usuario { get; set; } // En tu SQL es id_usuario, no id
+        public int id_usuario { get; set; }
         
-        public string username { get; set; }
-        public string password { get; set; }
-        public string correo { get; set; }
-        public string nombre { get; set; }
-        public string apellido_paterno { get; set; }
-        public string apellido_materno { get; set; }
+        public string username { get; set; } = string.Empty;
+        public string password { get; set; } = string.Empty;
+        public string correo { get; set; } = string.Empty;
+        public string nombre { get; set; } = string.Empty;
+        public string apellido_paterno { get; set; } = string.Empty;
+        public string apellido_materno { get; set; } = string.Empty;
         
-        [Column(TypeName = "tipo_rol")] // Tu ENUM personalizado
+        // Lo dejamos como string para que el compilador no busque el tipo_rol
         public string rol { get; set; } = "cliente"; 
         
         public DateTime fecha_registro { get; set; } = DateTime.Now;
