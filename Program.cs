@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using axcan.Data;
-using Microsoft.AspNetCore.HttpOverrides; // <-- ¡ESTO EVITA QUE SE CAIGA EL SERVER!
+using Microsoft.AspNetCore.HttpOverrides; // <-- Indispensable para que funcione el proxy de Render
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,6 +12,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // --- CONFIGURACIÓN DE GOOGLE ---
+// Usamos variables de entorno para que Render las lea de forma segura
 builder.Services.AddAuthentication(options => {
     options.DefaultScheme = "Cookies";
     options.DefaultChallengeScheme = "Google";
@@ -24,29 +25,35 @@ builder.Services.AddAuthentication(options => {
 
 var app = builder.Build();
 
-// 2. CONFIGURACIÓN DEL PIPELINE (EL ORDEN IMPORTA MUCHO AQUÍ)
+// 2. CONFIGURACIÓN DEL PIPELINE (ORDEN CRÍTICO)
 
-// Esto arregla el error de "origin_mismatch" en Render
+// Configuración para que la app entienda que está detrás de un proxy (Render)
 app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
 });
 
+// ESTO ROMPE EL BUCLE DE REDIRECCIÓN (OVERFLOW):
+// En lugar de forzar "https" a ciegas, leemos lo que el proxy de Render nos dice.
 app.Use((context, next) =>
 {
-    context.Request.Scheme = "https";
+    if (context.Request.Headers.TryGetValue("X-Forwarded-Proto", out var proto))
+    {
+        context.Request.Scheme = proto;
+    }
     return next();
 });
 
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
+    // NO habilites UseHttpsRedirection aquí, Render ya maneja el SSL por ti.
 }
 
 app.UseStaticFiles();
 app.UseRouting();
 
-// El orden sagrado: Authentication siempre antes que Authorization
+// Orden sagrado: Autenticación antes que Autorización
 app.UseAuthentication(); 
 app.UseAuthorization();
 
