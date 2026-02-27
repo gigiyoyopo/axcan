@@ -4,13 +4,13 @@ using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. REGISTRO DE SERVICIOS
+// 1. SERVICIOS
 builder.Services.AddControllersWithViews();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// CONFIGURACIÓN DE GOOGLE (Asegúrate de tener instalada la versión 9.0.0)
+// CONFIGURACIÓN DE GOOGLE
 builder.Services.AddAuthentication(options => {
     options.DefaultScheme = "Cookies";
     options.DefaultChallengeScheme = "Google";
@@ -23,33 +23,26 @@ builder.Services.AddAuthentication(options => {
 
 var app = builder.Build();
 
-// 2. CONFIGURACIÓN DEL PIPELINE (ORDEN ESTRICTO PARA EVITAR OVERFLOW)
+// 2. CONFIGURACIÓN DEL PIPELINE (ORDEN ESPECÍFICO PARA RENDER)
 
-// Esto es vital: Le dice a la app que confíe plenamente en el Proxy de Render
+// Esto es lo UNICO que necesitas para que la app entienda el protocolo de Render
 app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
 });
 
-// SOLUCIÓN DEFINITIVA AL OVERFLOW Y ORIGIN_MISMATCH:
-// Forzamos que la app siempre se reconozca como HTTPS y con el host de Render.
-app.Use((context, next) =>
-{
-    context.Request.Scheme = "https";
-    context.Request.Host = new HostString("axcan.onrender.com");
-    return next();
-});
+// IMPORTANTE: NO uses app.UseHttpsRedirection(). 
+// Render ya redirecciona a HTTPS. Si lo pones aquí, causas el OVERFLOW.
 
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    // ELIMINADO: app.UseHttpsRedirection() -> Esta es la causa principal del bucle infinito en Render.
 }
 
 app.UseStaticFiles();
 app.UseRouting();
 
-// El orden de estos dos es obligatorio
+// Orden sagrado
 app.UseAuthentication(); 
 app.UseAuthorization();
 
