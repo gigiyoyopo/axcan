@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using axcan.Data;
 
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. REGISTRO DE SERVICIOS
