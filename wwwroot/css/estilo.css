@@ -174,3 +174,10 @@
     transform: scale(1.03);
     box-shadow: 0 15px 40px rgba(0,0,0,0.2);
 }
+#mapaRegistro {
+    height: 400px !important; 
+    width: 100%;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    z-index: 1; 
+}
