@@ -13,10 +13,15 @@ window.onload = function () {
         callback: handleGoogleRegister
     });
 
-    google.accounts.id.renderButton(
-        document.getElementById("google-register-btn"),
-        { theme: "outline", size: "large", width: "100%", text: "signup_with" }
-    );
+ google.accounts.id.renderButton(
+    document.getElementById("google-register-btn"),
+    { 
+        theme: "outline", 
+        size: "large", 
+        width: 350, 
+        text: "signup_with"
+    }
+);
 
     const registerForm = document.getElementById('registerForm');
 

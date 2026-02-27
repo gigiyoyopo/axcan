@@ -7,6 +7,7 @@ namespace axcan.Models
     public class Usuario
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)] 
         [Column("id_usuario")] 
         public int id_usuario { get; set; }
         
