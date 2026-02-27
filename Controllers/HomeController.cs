@@ -49,12 +49,12 @@ namespace axcan.Controllers
         }
 
         // --- LÓGICA DE REGISTRO ---
+        // En HomeController.cs
 [HttpPost]
 public async Task<IActionResult> ProcesarRegistro(string nombre, string apellido_paterno, string apellido_materno, string correo, string username, string password)
 {
     try
     {
-        // 1. Creamos el usuario con los datos que llegan del formulario
         var nuevoUsuario = new Usuario
         {
             nombre = nombre,
@@ -62,23 +62,29 @@ public async Task<IActionResult> ProcesarRegistro(string nombre, string apellido
             apellido_materno = apellido_materno,
             correo = correo,
             username = username,
-            password = password, // Luego le metemos hash para que esté blindado
-            rol = "cliente" // El valor de tu ENUM en minúsculas
+            password = password,
+            rol = "cliente"
         };
 
-        // 2. Guardamos en la base de datos de Supabase
         _context.usuarios.Add(nuevoUsuario);
-        await _context.SaveChangesAsync();
+        int filasAfetadas = await _context.SaveChangesAsync();
 
-        // 3. ¡ESTO ES LO QUE FALTA! Redirigir para que no salga página vacía
-        TempData["Mensaje"] = "¡Registro exitoso, cawn! Ya puedes entrar.";
-        return RedirectToAction("login"); 
+        if (filasAfetadas > 0)
+        {
+            TempData["Mensaje"] = "¡A huevo! Guardado en Supabase.";
+            return RedirectToAction("login");
+        }
+        else
+        {
+            ViewBag.Error = "La base de datos dijo que no, pero no dio error. Revisa la conexión.";
+            return View("registro");
+        }
     }
     catch (Exception ex)
     {
-        // Si algo truena, nos regresa al registro y nos dice qué pasó
-        ViewBag.Error = "No se pudo guardar: " + (ex.InnerException?.Message ?? ex.Message);
-        return View("registro"); 
+        // Esto nos va a decir si Supabase rechazó el INSERT por el ENUM o por permisos
+        ViewBag.Error = "Error real: " + (ex.InnerException?.Message ?? ex.Message);
+        return View("registro");
     }
 }
 }
