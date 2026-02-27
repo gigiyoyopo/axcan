@@ -1,13 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
-using axcan.Data; // Asegúrate que este sea el namespace de tu DbContext
-using axcan.Models; // Asegúrate que este sea el namespace de tus modelos
+using axcan.Data; 
+using axcan.Models; 
 using Microsoft.EntityFrameworkCore;
 
 namespace axcan.Controllers
 {
     public class HomeController : Controller
     {
-        // 1. Inyectamos el contexto de la base de datos
         private readonly ApplicationDbContext _context;
 
         public HomeController(ApplicationDbContext context)
@@ -17,64 +16,96 @@ namespace axcan.Controllers
 
         // --- MÉTODOS DE VISTA ---
 
-        public IActionResult Index()
-        {
-            return View();
-        }
-
-        public IActionResult login()
-        {
-            return View();
-        }
-
-        public IActionResult registro()
-        {
-            return View();
-        }
-
-        public IActionResult acercade()
-        {
-            return View();
-        }
-
-        public IActionResult registronegocio()
-        {
-            return View();
-        }
+        public IActionResult Index() => View();
+        public IActionResult login() => View();
+        public IActionResult registro() => View();
+        public IActionResult acercade() => View();
+        public IActionResult registronegocio() => View();
 
         [Route("admin")]
-        public IActionResult Admin()
+        public IActionResult Admin() => View();
+
+        // --- LÓGICA DE REGISTRO DE USUARIO ---
+        [HttpPost]
+        public async Task<IActionResult> ProcesarRegistro(string nombre, string apellido_paterno, string apellido_materno, string correo, string username, string password)
         {
-            return View();
+            try
+            {
+                var nuevoUsuario = new Usuario
+                {
+                    nombre = nombre,
+                    apellido_paterno = apellido_paterno,
+                    apellido_materno = apellido_materno,
+                    correo = correo,
+                    username = username,
+                    password = password,
+                    rol = "cliente"
+                };
+
+                _context.usuarios.Add(nuevoUsuario);
+                await _context.SaveChangesAsync();
+
+                TempData["Mensaje"] = "¡A huevo! Guardado en Supabase.";
+                return RedirectToAction("login");
+            }
+            catch (Exception ex)
+            {
+                ViewBag.Error = "Error real: " + (ex.InnerException?.Message ?? ex.Message);
+                return View("registro");
+            }
         }
 
-        // --- LÓGICA DE REGISTRO ---
-[HttpPost]
-public async Task<IActionResult> ProcesarRegistro(string nombre, string apellido_paterno, string apellido_materno, string email, string username, string password)
-{
-    try
-    {
-        var nuevo = new Usuario
+        // --- LÓGICA DE REGISTRO DE EMPRESA ---
+        [HttpPost]
+        public async Task<IActionResult> GuardarEmpresa(string nombre_empresa, string rubro, string latitud, string longitud)
         {
-            nombre = nombre,
-            apellido_paterno = apellido_paterno,
-            apellido_materno = apellido_materno,
-            correo = email,
-            username = username,
-            password = password, // Recuerda encriptar después, cawn
-            rol = "cliente"
-        };
+            try
+            {
+                var nuevaEmpresa = new Empresa
+                {
+                    nombre_empresa = nombre_empresa,
+                    rubro = rubro,
+                    ubicacion_lat = decimal.Parse(latitud),
+                    ubicacion_lng = decimal.Parse(longitud),
+                    id_administrador = 1 // Temporal
+                };
 
-        _context.usuarios.Add(nuevo);
-        await _context.SaveChangesAsync();
+                _context.empresas.Add(nuevaEmpresa);
+                await _context.SaveChangesAsync();
 
-        TempData["Success"] = "¡Ya quedó! Inicia sesión.";
-        return RedirectToAction("login");
-    }
-    catch (Exception ex)
+                TempData["Mensaje"] = "¡Empresa registrada con éxito!";
+                return RedirectToAction("Admin");
+            }
+            catch (Exception ex)
+            {
+                ViewBag.Error = "Error al guardar empresa: " + ex.Message;
+                return View("registronegocio");
+            }
+        
+    } // Cierre de la Clase
+    [HttpPost]
+public async Task<IActionResult> ProcesarLogin(string correo, string password)
+{
+    // 1. Buscamos al usuario por correo
+    var usuario = await _context.usuarios
+        .FirstOrDefaultAsync(u => u.correo == correo && u.password == password);
+
+    if (usuario != null)
     {
-        ViewBag.Error = "Error: " + ex.InnerException?.Message;
-        return View("registro");
+        // 2. Guardamos sus datos en la Sesión (para que el menú sepa quién es)
+        HttpContext.Session.SetString("UsuarioNombre", usuario.nombre);
+        HttpContext.Session.SetInt32("UsuarioId", usuario.id_usuario);
+        HttpContext.Session.SetString("UsuarioRol", usuario.rol);
+
+        TempData["Mensaje"] = $"¡Qué onda, {usuario.nombre}! Bienvenido de vuelta.";
+        return RedirectToAction("Admin");
     }
-}}
+    else
+    {
+        ViewBag.Error = "Correo o contraseña incorrectos, cawn. Intenta de nuevo.";
+        return View("login");
+    }
+
+} // Cierre del Namespace
+    }
 }

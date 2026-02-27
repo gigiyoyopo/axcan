@@ -7,9 +7,7 @@ namespace axcan.Models
     public class Usuario
     {
         [Key]
-        [Column("id_usuario")] 
         public int id_usuario { get; set; }
-        
         public string username { get; set; } = string.Empty;
         public string password { get; set; } = string.Empty;
         public string correo { get; set; } = string.Empty;
@@ -17,9 +15,9 @@ namespace axcan.Models
         public string apellido_paterno { get; set; } = string.Empty;
         public string apellido_materno { get; set; } = string.Empty;
         
-        [Column("rol", TypeName = "public.tipo_rol")]
+        // Ahora es string para coincidir con el TEXT de SQL
         public string rol { get; set; } = "cliente"; 
-        
-        public DateTime fecha_registro { get; set; } = DateTime.Now;
+
+        public DateTime? fecha_registro { get; set; } = DateTime.Now;
     }
 }

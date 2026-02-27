@@ -1,27 +1,29 @@
 using Microsoft.EntityFrameworkCore;
-using axcan.Models;
+using axcan.Models; // <--- ESTO ARREGLA EL ERROR CS0246
 
 namespace axcan.Data
 {
     public class ApplicationDbContext : DbContext
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-            : base(options) 
-        { 
+            : base(options)
+        {
         }
 
-        // Esta es tu tabla en la base de datos
+        // Tus tablas
         public DbSet<Usuario> usuarios { get; set; }
+        public DbSet<Empresa> empresas { get; set; } // <--- Aquí usa Empresa
 
+        // SOLO UN MÉTODO OnModelCreating (ESTO ARREGLA EL ERROR CS0111)
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // Forzamos a que EF busque la tabla 'usuarios' en el esquema 'public'
-            modelBuilder.Entity<Usuario>()
-                .ToTable("usuarios", schema: "public");
+            base.OnModelCreating(modelBuilder);
 
-            // Nota: No incluimos el mapeo del ENUM 'tipo_rol' aquí 
-            // para evitar errores de compilación si no existe la clase en C#.
-            // El campo 'rol' en el modelo Usuario se tratará como un string común.
+            // Configuramos la tabla de usuarios
+            modelBuilder.Entity<Usuario>().ToTable("usuarios", schema: "public");
+
+            // Configuramos la tabla de empresas
+            modelBuilder.Entity<Empresa>().ToTable("empresas", schema: "public");
         }
     }
 }
