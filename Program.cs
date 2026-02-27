@@ -51,5 +51,13 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=login}/{id?}");
+// 1. Antes del var app = builder.Build();
+builder.Services.AddSession(options => {
+    options.IdleTimeout = TimeSpan.FromMinutes(30); // La sesión dura 30 mins
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
 
+// 2. Después de app.UseStaticFiles();
+app.UseSession();
 app.Run();
