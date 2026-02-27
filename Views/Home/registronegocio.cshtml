@@ -10,6 +10,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="~/css/estilo.css">
     <link rel="stylesheet" href="~/css/personalizacion-diseno.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body>
 
@@ -53,12 +54,20 @@
                     </div>
 
                     <div class="mb-3 border p-3">
-                        <label class="form-label">Ubicación del Negocio</label>
-                        <div id="mapaRegistro" style="height: 300px; background-color: #eee;">
-                            <p class="text-center pt-5">KATO ACA PON TU MAPS O LO QUE SEA DE LA UBI</p>
-                        </div>
-                        <input type="text" id="direccionEscrita" name="direccionEscrita" class="form-control mt-2" placeholder="Dirección detallada">
-                    </div>
+                       <div class="mb-3 border p-3">
+    <label class="form-label fw-bold">Ubicación del Negocio</label>
+    <div id="mapaRegistro" style="height: 400px; border-radius: 8px;"></div>
+    
+    <div class="input-group mt-2">
+        <input type="text" id="buscadorUbi" class="form-control" placeholder="Escribe tu calle y número...">
+        <button type="button" id="btnBuscar" class="btn btn-outline-secondary">🔍 Buscar</button>
+    </div>
+
+    <input type="hidden" id="latitud" name="latitud">
+    <input type="hidden" id="longitud" name="longitud">
+    
+    <input type="text" id="direccionEscrita" name="direccionEscrita" class="form-control mt-2" placeholder="Dirección confirmada">
+</div>
 
                     <div class="mt-5 d-flex gap-2">
                         <button type="submit" class="btn btn-primary">Finalizar Registro</button>
@@ -73,8 +82,9 @@
     <footer class="mt-5 py-3 border-top text-center">
         <p>© 2026 AXCAN - Koi Labs</p>
     </footer>
-
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="~/js/registronegocioalepro.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/registronegocioalepro.js"></script>
+ 
 </body>
 </html>
