@@ -71,7 +71,18 @@
             </div>
         </nav>
     </header>
-
+@if (Context.Session.GetString("UsuarioRol") == "administrador")
+{
+    <li class="nav-item">
+        <a class="nav-link text-info" asp-action="Admin"><i class="bi bi-speedometer2"></i> Dashboard Admin</a>
+    </li>
+}
+else if (Context.Session.GetString("UsuarioRol") == "usuario")
+{
+    <li class="nav-item">
+        <a class="nav-link text-warning" asp-action="registronegocio">🚀 Registrar mi Empresa</a>
+    </li>
+}
     <div class="container">
         <main role="main" class="pb-3">
             @RenderBody()

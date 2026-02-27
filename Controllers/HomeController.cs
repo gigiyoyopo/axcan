@@ -27,85 +27,82 @@ namespace axcan.Controllers
 
         // --- LÓGICA DE REGISTRO DE USUARIO ---
         [HttpPost]
-        public async Task<IActionResult> ProcesarRegistro(string nombre, string apellido_paterno, string apellido_materno, string correo, string username, string password)
-        {
-            try
-            {
-                var nuevoUsuario = new Usuario
-                {
-                    nombre = nombre,
-                    apellido_paterno = apellido_paterno,
-                    apellido_materno = apellido_materno,
-                    correo = correo,
-                    username = username,
-                    password = password,
-                    rol = "cliente"
-                };
-
-                _context.usuarios.Add(nuevoUsuario);
-                await _context.SaveChangesAsync();
-
-                TempData["Mensaje"] = "¡A huevo! Guardado en Supabase.";
-                return RedirectToAction("login");
-            }
-            catch (Exception ex)
-            {
-                ViewBag.Error = "Error real: " + (ex.InnerException?.Message ?? ex.Message);
-                return View("registro");
-            }
-        }
+public async Task<IActionResult> ProcesarRegistro(Usuario u)
+{
+    try {
+        u.rol = "usuario"; // <--- Todos empiezan desde abajo
+        u.fecha_registro = DateTime.Now;
+        
+        _context.usuarios.Add(u);
+        await _context.SaveChangesAsync();
+        
+        TempData["Mensaje"] = "¡Cuenta creada! Inicia sesión.";
+        return RedirectToAction("login");
+    }
+    catch (Exception ex) {
+        ViewBag.Error = "Error al crear cuenta: " + ex.Message;
+        return View("registro");
+    }
+}
 
         // --- LÓGICA DE REGISTRO DE EMPRESA ---
         [HttpPost]
-        public async Task<IActionResult> GuardarEmpresa(string nombre_empresa, string rubro, string latitud, string longitud)
-        {
-            try
-            {
-                var nuevaEmpresa = new Empresa
-                {
-                    nombre_empresa = nombre_empresa,
-                    rubro = rubro,
-                    ubicacion_lat = decimal.Parse(latitud),
-                    ubicacion_lng = decimal.Parse(longitud),
-                    id_administrador = 1 // Temporal
-                };
-
-                _context.empresas.Add(nuevaEmpresa);
-                await _context.SaveChangesAsync();
-
-                TempData["Mensaje"] = "¡Empresa registrada con éxito!";
-                return RedirectToAction("Admin");
-            }
-            catch (Exception ex)
-            {
-                ViewBag.Error = "Error al guardar empresa: " + ex.Message;
-                return View("registronegocio");
-            }
-        
-    } // Cierre de la Clase
     [HttpPost]
-public async Task<IActionResult> ProcesarLogin(string correo, string password)
+public async Task<IActionResult> GuardarEmpresa(Empresa e)
 {
-    // 1. Buscamos al usuario por correo
-    var usuario = await _context.usuarios
-        .FirstOrDefaultAsync(u => u.correo == correo && u.password == password);
+    try {
+        // 1. Guardamos la empresa
+        _context.empresas.Add(e);
+        
+        // 2. Buscamos al usuario actual (el que está en sesión)
+        var userId = HttpContext.Session.GetInt32("UsuarioId");
+        var usuario = await _context.usuarios.FindAsync(userId);
 
-    if (usuario != null)
-    {
-        // 2. Guardamos sus datos en la Sesión (para que el menú sepa quién es)
-        HttpContext.Session.SetString("UsuarioNombre", usuario.nombre);
-        HttpContext.Session.SetInt32("UsuarioId", usuario.id_usuario);
-        HttpContext.Session.SetString("UsuarioRol", usuario.rol);
+        if (usuario != null) {
+            usuario.rol = "administrador"; // ¡FELICIDADES, YA ES ADMIN!
+            _context.usuarios.Update(usuario);
+            
+            // Actualizamos la sesión para que el menú cambie de inmediato
+            HttpContext.Session.SetString("UsuarioRol", "administrador");
+        }
 
-        TempData["Mensaje"] = $"¡Qué onda, {usuario.nombre}! Bienvenido de vuelta.";
+        await _context.SaveChangesAsync();
+        
+        TempData["Mensaje"] = "¡Empresa registrada! Ahora tienes acceso al Panel de Administración.";
         return RedirectToAction("Admin");
     }
-    else
-    {
-        ViewBag.Error = "Correo o contraseña incorrectos, cawn. Intenta de nuevo.";
-        return View("login");
+    catch (Exception ex) {
+        ViewBag.Error = "No se pudo registrar la empresa: " + ex.Message;
+        return View("registronegocio");
     }
+}
+   // 1. LOGIN: Para que el sistema "sepa" quién eres
+[HttpPost]
+public async Task<IActionResult> ProcesarLogin(string correo, string password)
+{
+    var user = await _context.usuarios
+        .FirstOrDefaultAsync(u => u.correo == correo && u.password == password);
 
-} // Cierre del Namespace
+    if (user != null)
+    {
+        HttpContext.Session.SetInt32("UsuarioId", user.id_usuario);
+        HttpContext.Session.SetString("UsuarioNombre", user.nombre);
+        HttpContext.Session.SetString("UsuarioRol", user.rol); // usuario o administrador
+        
+        return RedirectToAction("Index");
+    }
+    ViewBag.Error = "Datos incorrectos";
+    return View("login");
+}
+
+// 2. CONFIGURACIÓN: La vista que pediste para el icono de perfil
+public async Task<IActionResult> ConfiguracionCuenta()
+{
+    var userId = HttpContext.Session.GetInt32("UsuarioId");
+    if (userId == null) return RedirectToAction("login");
+
+    var usuario = await _context.usuarios.FindAsync(userId);
+    return View(usuario);
+}
     }
 }
