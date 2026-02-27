@@ -1,18 +1,16 @@
 using Microsoft.EntityFrameworkCore;
 using axcan.Data;
-using Microsoft.AspNetCore.HttpOverrides; // <-- Indispensable para que funcione el proxy de Render
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. REGISTRO DE SERVICIOS
 builder.Services.AddControllersWithViews();
 
-// Conexión a Supabase
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// --- CONFIGURACIÓN DE GOOGLE ---
-// Usamos variables de entorno para que Render las lea de forma segura
+// CONFIGURACIÓN DE GOOGLE (v9.0.0)
 builder.Services.AddAuthentication(options => {
     options.DefaultScheme = "Cookies";
     options.DefaultChallengeScheme = "Google";
@@ -25,35 +23,28 @@ builder.Services.AddAuthentication(options => {
 
 var app = builder.Build();
 
-// 2. CONFIGURACIÓN DEL PIPELINE (ORDEN CRÍTICO)
+// 2. CONFIGURACIÓN DEL PIPELINE (ORDEN CRÍTICO PARA RENDER)
 
-// Configuración para que la app entienda que está detrás de un proxy (Render)
-app.UseForwardedHeaders(new ForwardedHeadersOptions
-{
-    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-});
-
-// ESTO ROMPE EL BUCLE DE REDIRECCIÓN (OVERFLOW):
-// En lugar de forzar "https" a ciegas, leemos lo que el proxy de Render nos dice.
+// A) Quitamos el ForwardedHeaders automático que a veces falla en Render
+// B) FORZAMOS la identidad externa. Con esto, la app deja de "adivinar" y de redireccionar.
 app.Use((context, next) =>
 {
-    if (context.Request.Headers.TryGetValue("X-Forwarded-Proto", out var proto))
-    {
-        context.Request.Scheme = proto;
-    }
+    context.Request.Scheme = "https";
+    context.Request.Host = new HostString("axcan.onrender.com");
     return next();
 });
 
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    // NO habilites UseHttpsRedirection aquí, Render ya maneja el SSL por ti.
+    // PROHIBIDO: app.UseHttpsRedirection() -> Esto es lo que causa el Overflow.
+    // PROHIBIDO: app.UseHsts() -> También puede causar bucles en proxies.
 }
 
 app.UseStaticFiles();
 app.UseRouting();
 
-// Orden sagrado: Autenticación antes que Autorización
+// El orden de estos dos es sagrado
 app.UseAuthentication(); 
 app.UseAuthorization();
 
