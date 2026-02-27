@@ -1,13 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
-using axcan.Data; // Asegúrate que este sea el namespace de tu DbContext
-using axcan.Models; // Asegúrate que este sea el namespace de tus modelos
+using axcan.Data; 
+using axcan.Models; 
 using Microsoft.EntityFrameworkCore;
 
 namespace axcan.Controllers
 {
     public class HomeController : Controller
     {
-        // 1. Inyectamos el contexto de la base de datos
         private readonly ApplicationDbContext _context;
 
         public HomeController(ApplicationDbContext context)
@@ -17,75 +16,71 @@ namespace axcan.Controllers
 
         // --- MÉTODOS DE VISTA ---
 
-        public IActionResult Index()
-        {
-            return View();
-        }
-
-        public IActionResult login()
-        {
-            return View();
-        }
-
-        public IActionResult registro()
-        {
-            return View();
-        }
-
-        public IActionResult acercade()
-        {
-            return View();
-        }
-
-        public IActionResult registronegocio()
-        {
-            return View();
-        }
+        public IActionResult Index() => View();
+        public IActionResult login() => View();
+        public IActionResult registro() => View();
+        public IActionResult acercade() => View();
+        public IActionResult registronegocio() => View();
 
         [Route("admin")]
-        public IActionResult Admin()
+        public IActionResult Admin() => View();
+
+        // --- LÓGICA DE REGISTRO DE USUARIO ---
+        [HttpPost]
+        public async Task<IActionResult> ProcesarRegistro(string nombre, string apellido_paterno, string apellido_materno, string correo, string username, string password)
         {
-            return View();
+            try
+            {
+                var nuevoUsuario = new Usuario
+                {
+                    nombre = nombre,
+                    apellido_paterno = apellido_paterno,
+                    apellido_materno = apellido_materno,
+                    correo = correo,
+                    username = username,
+                    password = password,
+                    rol = "cliente"
+                };
+
+                _context.usuarios.Add(nuevoUsuario);
+                await _context.SaveChangesAsync();
+
+                TempData["Mensaje"] = "¡A huevo! Guardado en Supabase.";
+                return RedirectToAction("login");
+            }
+            catch (Exception ex)
+            {
+                ViewBag.Error = "Error real: " + (ex.InnerException?.Message ?? ex.Message);
+                return View("registro");
+            }
         }
 
-        // --- LÓGICA DE REGISTRO ---
-        // En HomeController.cs
-[HttpPost]
-public async Task<IActionResult> ProcesarRegistro(string nombre, string apellido_paterno, string apellido_materno, string correo, string username, string password)
-{
-    try
-    {
-        var nuevoUsuario = new Usuario
+        // --- LÓGICA DE REGISTRO DE EMPRESA ---
+        [HttpPost]
+        public async Task<IActionResult> GuardarEmpresa(string nombre_empresa, string rubro, string latitud, string longitud)
         {
-            nombre = nombre,
-            apellido_paterno = apellido_paterno,
-            apellido_materno = apellido_materno,
-            correo = correo,
-            username = username,
-            password = password,
-            rol = "cliente"
-        };
+            try
+            {
+                var nuevaEmpresa = new Empresa
+                {
+                    nombre_empresa = nombre_empresa,
+                    rubro = rubro,
+                    ubicacion_lat = decimal.Parse(latitud),
+                    ubicacion_lng = decimal.Parse(longitud),
+                    id_administrador = 1 // Temporal
+                };
 
-        _context.usuarios.Add(nuevoUsuario);
-        int filasAfetadas = await _context.SaveChangesAsync();
+                _context.empresas.Add(nuevaEmpresa);
+                await _context.SaveChangesAsync();
 
-        if (filasAfetadas > 0)
-        {
-            TempData["Mensaje"] = "¡A huevo! Guardado en Supabase.";
-            return RedirectToAction("login");
+                TempData["Mensaje"] = "¡Empresa registrada con éxito!";
+                return RedirectToAction("Admin");
+            }
+            catch (Exception ex)
+            {
+                ViewBag.Error = "Error al guardar empresa: " + ex.Message;
+                return View("registronegocio");
+            }
         }
-        else
-        {
-            ViewBag.Error = "La base de datos dijo que no, pero no dio error. Revisa la conexión.";
-            return View("registro");
-        }
-    }
-    catch (Exception ex)
-    {
-        // Esto nos va a decir si Supabase rechazó el INSERT por el ENUM o por permisos
-        ViewBag.Error = "Error real: " + (ex.InnerException?.Message ?? ex.Message);
-        return View("registro");
-    }
-}
-}
-}
+    } // Cierre de la Clase
+} // Cierre del Namespace

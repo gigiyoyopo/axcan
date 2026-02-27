@@ -18,10 +18,13 @@ namespace axcan.Data
             // Forzamos a que EF busque la tabla 'usuarios' en el esquema 'public'
             modelBuilder.Entity<Usuario>()
                 .ToTable("usuarios", schema: "public");
-
-            // Nota: No incluimos el mapeo del ENUM 'tipo_rol' aquí 
-            // para evitar errores de compilación si no existe la clase en C#.
-            // El campo 'rol' en el modelo Usuario se tratará como un string común.
         }
+    public DbSet<Empresa> empresas { get; set; }
+
+protected override void OnModelCreating(ModelBuilder modelBuilder)
+{
+    base.OnModelCreating(modelBuilder);
+    modelBuilder.Entity<Empresa>().ToTable("empresas", schema: "public");
+}
     }
 }
