@@ -6,47 +6,51 @@ var builder = WebApplication.CreateBuilder(args);
 
 // 1. SERVICIOS
 builder.Services.AddControllersWithViews();
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// CONFIGURACIÓN DE GOOGLE - BLINDADA PARA RENDER
 builder.Services.AddAuthentication(options => {
     options.DefaultScheme = "Cookies";
     options.DefaultChallengeScheme = "Google";
 })
 .AddCookie("Cookies", options => {
-    // Esto es vital para que la cookie de sesión no se pierda entre Render y Google
     options.Cookie.SameSite = SameSiteMode.Lax; 
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always; 
 })
 .AddGoogle("Google", options => {
     options.ClientId = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID") ?? "";
     options.ClientSecret = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_SECRET") ?? "";
+    
+    // ESTA ES LA CLAVE: Forzamos que la URL de redirección sea siempre HTTPS
+    options.Events.OnRedirectToAuthorizationEndpoint = context =>
+    {
+        var redirectUri = context.RedirectUri.Replace("http://", "https://");
+        context.Response.Redirect(redirectUri);
+        return Task.CompletedTask;
+    };
 });
 
 var app = builder.Build();
 
-// 2. MIDDLEWARE DE CONFIANZA (ESTO ARREGLA EL ORIGIN_MISMATCH)
+// 2. MIDDLEWARE (ORDEN CRÍTICO PARA EVITAR OVERFLOW Y MISMATCH)
 
-// Forzamos a que la aplicación reconozca el HTTPS de Render
-app.UseForwardedHeaders(new ForwardedHeadersOptions
-{
-    ForwardedHeaders = ForwardedHeaders.XForwardedProto
-});
-
+// Forzamos a que la app crea que es HTTPS antes de procesar nada más
 app.Use((context, next) =>
 {
-    // Forzamos el esquema a HTTPS para que el 'origin' enviado a Google coincida
     context.Request.Scheme = "https";
+    context.Request.Host = new HostString("axcan.onrender.com");
     return next();
 });
 
-// En Render, el entorno suele venir como 'Development' por defecto en Docker. 
-// Forzamos el manejo de errores de producción.
-if (app.Environment.IsDevelopment())
+// Configuramos los encabezados reenviados para que confíe en el Proxy de Render
+app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
-    app.UseDeveloperExceptionPage();
-}
-else
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
+
+if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
 }
@@ -54,7 +58,8 @@ else
 app.UseStaticFiles();
 app.UseRouting();
 
-app.UseAuthentication();
+// El orden de estos dos no se puede cambiar
+app.UseAuthentication(); 
 app.UseAuthorization();
 
 app.MapControllerRoute(
