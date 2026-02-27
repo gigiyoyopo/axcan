@@ -9,40 +9,52 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// CONFIGURACIÓN DE GOOGLE
 builder.Services.AddAuthentication(options => {
     options.DefaultScheme = "Cookies";
     options.DefaultChallengeScheme = "Google";
 })
-.AddCookie("Cookies")
+.AddCookie("Cookies", options => {
+    // Esto es vital para que la cookie de sesión no se pierda entre Render y Google
+    options.Cookie.SameSite = SameSiteMode.Lax; 
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+})
 .AddGoogle("Google", options => {
-    // Estas líneas lanzan los warnings de tus logs, pero funcionan
     options.ClientId = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID") ?? "";
     options.ClientSecret = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_SECRET") ?? "";
 });
 
 var app = builder.Build();
 
-// 2. CONFIGURACIÓN DEL PIPELINE (FORZADO PARA RENDER)
+// 2. MIDDLEWARE DE CONFIANZA (ESTO ARREGLA EL ORIGIN_MISMATCH)
 
-// Esto fuerza a la app a ignorar que internamente es HTTP y presentarse como HTTPS ante Google
+// Forzamos a que la aplicación reconozca el HTTPS de Render
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedProto
+});
+
 app.Use((context, next) =>
 {
+    // Forzamos el esquema a HTTPS para que el 'origin' enviado a Google coincida
     context.Request.Scheme = "https";
-    context.Request.Host = new HostString("axcan.onrender.com");
     return next();
 });
 
-// Indispensable para que Google reciba la IP correcta
-app.UseForwardedHeaders(new ForwardedHeadersOptions
+// En Render, el entorno suele venir como 'Development' por defecto en Docker. 
+// Forzamos el manejo de errores de producción.
+if (app.Environment.IsDevelopment())
 {
-    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-});
+    app.UseDeveloperExceptionPage();
+}
+else
+{
+    app.UseExceptionHandler("/Home/Error");
+}
 
 app.UseStaticFiles();
 app.UseRouting();
 
-app.UseAuthentication(); 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllerRoute(
