@@ -50,31 +50,36 @@ namespace axcan.Controllers
 
         // --- LÓGICA DE REGISTRO ---
 [HttpPost]
-public async Task<IActionResult> ProcesarRegistro(string nombre, string apellido_paterno, string apellido_materno, string email, string username, string password)
+public async Task<IActionResult> ProcesarRegistro(string nombre, string apellido_paterno, string apellido_materno, string correo, string username, string password)
 {
     try
     {
-        var nuevo = new Usuario
+        // 1. Creamos el usuario con los datos que llegan del formulario
+        var nuevoUsuario = new Usuario
         {
             nombre = nombre,
             apellido_paterno = apellido_paterno,
             apellido_materno = apellido_materno,
-            correo = email,
+            correo = correo,
             username = username,
-            password = password, // Recuerda encriptar después, cawn
-            rol = "cliente"
+            password = password, // Luego le metemos hash para que esté blindado
+            rol = "cliente" // El valor de tu ENUM en minúsculas
         };
 
-        _context.usuarios.Add(nuevo);
+        // 2. Guardamos en la base de datos de Supabase
+        _context.usuarios.Add(nuevoUsuario);
         await _context.SaveChangesAsync();
 
-        TempData["Success"] = "¡Ya quedó! Inicia sesión.";
-        return RedirectToAction("login");
+        // 3. ¡ESTO ES LO QUE FALTA! Redirigir para que no salga página vacía
+        TempData["Mensaje"] = "¡Registro exitoso, cawn! Ya puedes entrar.";
+        return RedirectToAction("login"); 
     }
     catch (Exception ex)
     {
-        ViewBag.Error = "Error: " + ex.InnerException?.Message;
-        return View("registro");
+        // Si algo truena, nos regresa al registro y nos dice qué pasó
+        ViewBag.Error = "No se pudo guardar: " + (ex.InnerException?.Message ?? ex.Message);
+        return View("registro"); 
     }
-}}
+}
+}
 }
