@@ -6,7 +6,6 @@ var builder = WebApplication.CreateBuilder(args);
 
 // 1. SERVICIOS
 builder.Services.AddControllersWithViews();
-
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -17,32 +16,32 @@ builder.Services.AddAuthentication(options => {
 })
 .AddCookie("Cookies")
 .AddGoogle("Google", options => {
-    options.ClientId = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID");
-    options.ClientSecret = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_SECRET");
+    // Estas líneas lanzan los warnings de tus logs, pero funcionan
+    options.ClientId = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID") ?? "";
+    options.ClientSecret = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_SECRET") ?? "";
 });
 
 var app = builder.Build();
 
-// 2. CONFIGURACIÓN DEL PIPELINE (ORDEN ESPECÍFICO PARA RENDER)
+// 2. CONFIGURACIÓN DEL PIPELINE (FORZADO PARA RENDER)
 
-// Esto es lo UNICO que necesitas para que la app entienda el protocolo de Render
+// Esto fuerza a la app a ignorar que internamente es HTTP y presentarse como HTTPS ante Google
+app.Use((context, next) =>
+{
+    context.Request.Scheme = "https";
+    context.Request.Host = new HostString("axcan.onrender.com");
+    return next();
+});
+
+// Indispensable para que Google reciba la IP correcta
 app.UseForwardedHeaders(new ForwardedHeadersOptions
 {
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
 });
 
-// IMPORTANTE: NO uses app.UseHttpsRedirection(). 
-// Render ya redirecciona a HTTPS. Si lo pones aquí, causas el OVERFLOW.
-
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler("/Home/Error");
-}
-
 app.UseStaticFiles();
 app.UseRouting();
 
-// Orden sagrado
 app.UseAuthentication(); 
 app.UseAuthorization();
 
