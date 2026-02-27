@@ -10,7 +10,7 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// CONFIGURACIÓN DE GOOGLE (v9.0.0)
+// CONFIGURACIÓN DE GOOGLE (Asegúrate de tener instalada la versión 9.0.0)
 builder.Services.AddAuthentication(options => {
     options.DefaultScheme = "Cookies";
     options.DefaultChallengeScheme = "Google";
@@ -23,10 +23,16 @@ builder.Services.AddAuthentication(options => {
 
 var app = builder.Build();
 
-// 2. CONFIGURACIÓN DEL PIPELINE (ORDEN CRÍTICO PARA RENDER)
+// 2. CONFIGURACIÓN DEL PIPELINE (ORDEN ESTRICTO PARA EVITAR OVERFLOW)
 
-// A) Quitamos el ForwardedHeaders automático que a veces falla en Render
-// B) FORZAMOS la identidad externa. Con esto, la app deja de "adivinar" y de redireccionar.
+// Esto es vital: Le dice a la app que confíe plenamente en el Proxy de Render
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+});
+
+// SOLUCIÓN DEFINITIVA AL OVERFLOW Y ORIGIN_MISMATCH:
+// Forzamos que la app siempre se reconozca como HTTPS y con el host de Render.
 app.Use((context, next) =>
 {
     context.Request.Scheme = "https";
@@ -37,14 +43,13 @@ app.Use((context, next) =>
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    // PROHIBIDO: app.UseHttpsRedirection() -> Esto es lo que causa el Overflow.
-    // PROHIBIDO: app.UseHsts() -> También puede causar bucles en proxies.
+    // ELIMINADO: app.UseHttpsRedirection() -> Esta es la causa principal del bucle infinito en Render.
 }
 
 app.UseStaticFiles();
 app.UseRouting();
 
-// El orden de estos dos es sagrado
+// El orden de estos dos es obligatorio
 app.UseAuthentication(); 
 app.UseAuthorization();
 
