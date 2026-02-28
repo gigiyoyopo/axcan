@@ -1,0 +1,74 @@
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Módulo de Reseñas</title>
+    <link rel="stylesheet" href="reviews.css">
+</head>
+<body>
+
+<section class="reviews-module">
+
+    <div class="reviews-header">
+        <h2>Reseñas del Negocio</h2>
+
+        <div class="average-box">
+            <h3 id="averageValue">0.0</h3>
+            <div id="averageStars"></div>
+            <p id="totalReviews">(0 reseñas)</p>
+        </div>
+    </div>
+
+    <!-- reportar-->
+    <div class="report-box">
+        <h3>Reportar negocio</h3>
+        <textarea id="reportComment" placeholder="Describe el problema..."></textarea>
+        <button onclick="reportBusiness()">Enviar Reporte</button>
+    </div>
+
+
+    <!-- Formulario par reseña  -->
+    <div class="review-form">
+        <h3>Deja tu reseña</h3>
+
+        <input type="text" id="clientName" placeholder="Tu nombre">
+
+        <div class="star-rating" id="starRating">
+            <span data-value="1">★</span>
+            <span data-value="2">★</span>
+            <span data-value="3">★</span>
+            <span data-value="4">★</span>
+            <span data-value="5">★</span>
+        </div>
+
+        <textarea id="reviewComment" placeholder="Escribe tu comentario..."></textarea>
+
+        <button onclick="addReview()">Publicar Reseña</button>
+    </div>
+
+
+    <!--- Filtro de estrellitas-->
+
+    <div class="filter-box">
+        <label>Filtrar por estrellas:</label>
+        <select id="filterStars" onchange="filterReviews()">
+            <option value="0"> Todas</option>
+            <option value="5">5 estrellas</option>
+            <option value="4">4 estrellas</option>
+            <option value="3">3 estrellas</option>
+            <option value="2">2 estrellas</option>
+            <option value="1">1 estrella</option>
+        </select>
+    </div>
+
+    <div class="reviews-container" id="reviewsContainer"></div>
+
+</section>
+
+<script src="reviews.js"></script>
+</body>
+</html>

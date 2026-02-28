@@ -18,23 +18,32 @@
             <div class="text-center mb-3 max-width-200 mx-auto">
                 <div class="logo-container">
                     <span class="fw-bold text-primary">
-                        <img src="~/imagenesaxcan/logo_axcan.png"
-                            alt="Logo AXCAN"
-                            class="logo-navbar">
+                        <img src="~/imagenesaxcan/logo_axcan.png" alt="Logo AXCAN" class="logo-navbar">
                     </span>
                 </div>
             </div>
 
             <h2 class="text-center fw-bold mb-4">Crear Cuenta</h2>
 
-            <form id="registerForm">
+            <form id="registerForm" asp-controller="Home" asp-action="ProcesarRegistro" method="post">
+                
                 <div class="form-floating mb-3">
-                    <input type="text" name="fullname" class="form-control" id="regName" placeholder="Nombre Completo" required>
-                    <label for="regName">Nombre Completo</label>
+                    <input type="text" name="nombre" class="form-control" id="regNombre" placeholder="Nombre" required>
+                    <label for="regNombre">Nombre</label>
                 </div>
 
                 <div class="form-floating mb-3">
-                    <input type="email" name="email" class="form-control" id="regEmail" placeholder="correo@ejemplo.com" required>
+                    <input type="text" name="apellido_paterno" class="form-control" id="regPat" placeholder="Ap. Paterno" required>
+                    <label for="regPat">Apellido Paterno</label>
+                </div>
+
+                <div class="form-floating mb-3">
+                    <input type="text" name="apellido_materno" class="form-control" id="regMat" placeholder="Ap. Materno" required>
+                    <label for="regMat">Apellido Materno</label>
+                </div>
+
+                <div class="form-floating mb-3">
+                    <input type="email" name="correo" class="form-control" id="regEmail" placeholder="correo@ejemplo.com" required>
                     <label for="regEmail">Correo Electrónico</label>
                 </div>
 
@@ -56,15 +65,16 @@
                 <button type="submit" class="btn btn-primary w-100 py-2 fw-bold mb-3">
                     REGISTRARME
                 </button>
+                
                 <div class="d-flex align-items-center my-3">
-               <hr class="flex-grow-1">
-               <span class="mx-2 text-muted small">O REGÍSTRATE CON</span>
-               <hr class="flex-grow-1">
-              </div>
+                    <hr class="flex-grow-1">
+                    <span class="mx-2 text-muted small">O REGÍSTRATE CON</span>
+                    <hr class="flex-grow-1">
+                </div>
 
-           <div class="d-flex justify-content-center">
-             <div id="google-register-btn"></div>
-</div>
+                <div class="d-flex justify-content-center">
+                    <div id="google-register-btn"></div>
+                </div>
             </form>
 
             <div class="text-center mt-3">
@@ -72,8 +82,9 @@
             </div>
         </div>
     </div>
-    
+    // a
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="~/js/alejandro2.js"></script>
 </body>
+
 </html>

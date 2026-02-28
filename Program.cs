@@ -1,39 +1,66 @@
-using Microsoft.EntityFrameworkCore; // <-- Los using van aquí arriba
+using Microsoft.EntityFrameworkCore;
 using axcan.Data;
 
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. REGISTRO DE SERVICIOS (Los ingredientes)
+// --- 1. REGISTRO DE SERVICIOS (TODO lo que sea builder.Services va AQUÍ) ---
+
 builder.Services.AddControllersWithViews();
 
-// Aquí registramos la conexión a Supabase
+// Obtenemos la cadena de conexión
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+// Registramos el Contexto con Npgsql
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(connectionString, npgsqlOptions => {
+        npgsqlOptions.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null);
+    }));
 
-// -----------------------------------------------------------
-var app = builder.Build(); // El Build va solito, sin nada adentro
-// -----------------------------------------------------------
+// CONFIGURACIÓN DE SESIÓN (Movido arriba de builder.Build)
+builder.Services.AddSession(options => {
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
 
-// 2. CONFIGURACIÓN DEL PIPELINE (Cómo se cocina)
+// --- LA LÍNEA SAGRADA ---
+var app = builder.Build();
+
+// --- EL CHISMOSO (Logs de Render) ---
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<ApplicationDbContext>();
+        context.Database.OpenConnection();
+        Console.WriteLine("✅ ¡IGUANO EXITOSO! Conectado a Supabase correctamente.");
+        context.Database.CloseConnection();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("❌ ERROR DE CONEXIÓN: " + ex.Message);
+    }
+}
+
+// --- 2. CONFIGURACIÓN DEL PIPELINE (TODO lo que sea app.Use va AQUÍ) ---
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
 }
 
-app.UseStaticFiles(); // Importante para tus CSS y JS
+app.UseStaticFiles();
+
+// ACTIVAR SESIÓN (Debe ir después de StaticFiles y antes de Routing)
+app.UseSession();
+
 app.UseRouting();
 app.UseAuthorization();
 
-// Tus rutas
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=login}/{id?}");
-
-// --- RUTA SECRETA PARA EL CHISME (Déjala por si ocupamos debuguear) ---
-app.MapGet("/chisme", () => {
-    var root = System.IO.Directory.GetCurrentDirectory();
-    var files = System.IO.Directory.GetFiles(root, "*", System.IO.SearchOption.AllDirectories);
-    return "ARCHIVOS EN EL SERVIDOR:\n\n" + string.Join("\n", files);
-});
 
 app.Run();
