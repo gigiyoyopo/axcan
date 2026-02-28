@@ -18,7 +18,7 @@ namespace axcan.Controllers
 
         public async Task<IActionResult> Index() 
         {
-            // Traemos los negocios de la DB para las cards estilo Little Caesars
+            // Carga la lista de empresas para las Cards del Index
             var empresas = await _context.empresas.ToListAsync();
             return View(empresas);
         }
@@ -36,17 +36,27 @@ namespace axcan.Controllers
         [HttpPost]
         public async Task<IActionResult> ProcesarRegistro(Usuario u)
         {
-            try {
-                u.rol = "usuario"; // Todos nacen como usuario base
+            try 
+            {
+                // Verifica si el nombre de usuario ya existe
+                var existe = await _context.usuarios.AnyAsync(x => x.username == u.username);
+                if (existe)
+                {
+                    ViewBag.Error = "Ese nombre de usuario ya está ocupado.";
+                    return View("registro");
+                }
+
+                u.rol = "usuario"; 
                 u.fecha_registro = DateTime.Now;
                 _context.usuarios.Add(u);
                 await _context.SaveChangesAsync();
                 
-                TempData["Mensaje"] = "¡Cuenta creada exitosamente! Por favor inicia sesión.";
+                TempData["Mensaje"] = "¡Cuenta creada! Ya puedes iniciar sesión.";
                 return RedirectToAction("login");
             }
-            catch (Exception ex) {
-                ViewBag.Error = "No pudimos crear la cuenta: " + ex.Message;
+            catch (Exception ex) 
+            {
+                ViewBag.Error = "Error al registrar: " + ex.Message;
                 return View("registro");
             }
         }
@@ -54,7 +64,6 @@ namespace axcan.Controllers
         [HttpPost]
         public async Task<IActionResult> ProcesarLogin(string username, string password)
         {
-            // Validación real contra Supabase
             var user = await _context.usuarios
                 .FirstOrDefaultAsync(u => u.username == username && u.password == password);
 
@@ -66,7 +75,7 @@ namespace axcan.Controllers
                 return RedirectToAction("Index");
             }
             
-            ViewBag.Error = "Credenciales incorrectas. Verifica tu usuario y contraseña.";
+            ViewBag.Error = "Usuario o contraseña incorrectos.";
             return View("login");
         }
 
@@ -90,7 +99,7 @@ namespace axcan.Controllers
                 
                 var usuario = await _context.usuarios.FindAsync(userId);
                 if (usuario != null) {
-                    usuario.rol = "administrador"; // ASCENSO AUTOMÁTICO AL REGISTRAR EMPRESA
+                    usuario.rol = "administrador"; 
                     _context.usuarios.Update(usuario);
                     HttpContext.Session.SetString("UsuarioRol", "administrador");
                 }
@@ -99,7 +108,7 @@ namespace axcan.Controllers
                 return RedirectToAction("Admin");
             }
             catch (Exception ex) {
-                ViewBag.Error = "Error al registrar el negocio: " + ex.Message;
+                ViewBag.Error = "Error al registrar negocio: " + ex.Message;
                 return View("registronegocio");
             }
         }
