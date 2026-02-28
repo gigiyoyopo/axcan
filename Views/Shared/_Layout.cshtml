@@ -17,53 +17,66 @@
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark border-bottom shadow-sm mb-3">
             <div class="container-fluid">
                 <a class="navbar-brand fw-bold" asp-controller="Home" asp-action="Index">
-                    <i class="bi bi-geo-alt-fill text-primary"></i> AXCAN
+                    <i class="bi bi-geo-alt-fill text-primary"></i> AXCAN [cite: 158]
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse">
-                    <span class="navbar-toggler-icon"></span>
+                    <span class="navbar-toggler-icon"></span> [cite: 159]
                 </button>
                 
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
-                            <a class="nav-link" asp-controller="Home" asp-action="Index">Inicio</a>
+                            <a class="nav-link text-white" asp-controller="Home" asp-action="Index">Inicio</a> [cite: 160]
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" asp-controller="Home" asp-action="acercade">Acerca de</a>
+                            <a class="nav-link text-white" asp-controller="Home" asp-action="acercade">Acerca de</a> [cite: 161]
                         </li>
                         
-                        @* Solo mostramos registrar empresa si hay alguien logueado *@
-                        @if (Context.Session.GetInt32("UsuarioId") != null)
+                        @* --- LÓGICA DE ROLES: ACCESO DIFERENCIADO --- *@
+                        @if (Context.Session.GetString("UsuarioRol") == "administrador")
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-info fw-bold" asp-controller="Home" asp-action="Admin">
+                                   <i class="bi bi-speedometer2"></i> Dashboard Admin
+                                </a>
+                            </li>
+                        }
+                        else if (Context.Session.GetString("UsuarioRol") == "usuario")
                         {
                             <li class="nav-item">
                                 <a class="nav-link text-warning fw-bold" asp-controller="Home" asp-action="registronegocio">
-                                    <i class="bi bi-plus-circle"></i> Registrar Empresa
-                                </a>
+                                   <i class="bi bi-plus-circle"></i> Registrar mi Empresa
+                                </a> [cite: 163, 172]
                             </li>
                         }
                     </ul>
 
+                    @* --- MENÚ DE USUARIO / PERFIL --- *@
                     <ul class="navbar-nav">
                         @if (Context.Session.GetString("UsuarioNombre") != null)
                         {
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle text-white" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
-                                    <i class="bi bi-person-circle"></i> @Context.Session.GetString("UsuarioNombre")
+                                    <i class="bi bi-person-circle"></i> @Context.Session.GetString("UsuarioNombre") 
                                 </a>
-                                <ul class="dropdown-menu dropdown-menu-end">
-                                    <li><a class="dropdown-item" asp-action="Admin"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+                                <ul class="dropdown-menu dropdown-menu-end shadow">
+                                    <li><a class="dropdown-item" asp-controller="Home" asp-action="ConfiguracionCuenta"><i class="bi bi-gear"></i> Configuración</a></li> [cite: 19, 167]
+                                    @if (Context.Session.GetString("UsuarioRol") == "administrador")
+                                    {
+                                        <li><a class="dropdown-item text-primary" asp-controller="Home" asp-action="Admin"><i class="bi bi-layout-text-sidebar-reverse"></i> Ir al Panel</a></li>
+                                    }
                                     <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item text-danger" asp-action="Logout"><i class="bi bi-box-arrow-right"></i> Salir</a></li>
+                                    <li><a class="dropdown-item text-danger" asp-controller="Home" asp-action="Logout"><i class="bi bi-box-arrow-right"></i> Salir</a></li> 
                                 </ul>
                             </li>
                         }
                         else
                         {
                             <li class="nav-item">
-                                <a class="nav-link" asp-action="login">Entrar</a>
+                                <a class="nav-link text-white" asp-controller="Home" asp-action="login">Entrar</a> [cite: 170]
                             </li>
                             <li class="nav-item">
-                                <a class="btn btn-primary btn-sm mt-1" asp-action="registro">Crear Cuenta</a>
+                                <a class="btn btn-primary btn-sm mt-1 ms-lg-2" asp-controller="Home" asp-action="registro">Crear Cuenta</a> [cite: 171]
                             </li>
                         }
                     </ul>
@@ -71,27 +84,16 @@
             </div>
         </nav>
     </header>
-@if (Context.Session.GetString("UsuarioRol") == "administrador")
-{
-    <li class="nav-item">
-        <a class="nav-link text-info" asp-action="Admin"><i class="bi bi-speedometer2"></i> Dashboard Admin</a>
-    </li>
-}
-else if (Context.Session.GetString("UsuarioRol") == "usuario")
-{
-    <li class="nav-item">
-        <a class="nav-link text-warning" asp-action="registronegocio">🚀 Registrar mi Empresa</a>
-    </li>
-}
+
     <div class="container">
         <main role="main" class="pb-3">
-            @RenderBody()
+            @RenderBody() [cite: 173]
         </main>
     </div>
 
     <footer class="border-top footer text-muted bg-light mt-auto py-3">
         <div class="container text-center">
-            &copy; 2026 - <span class="fw-bold">AXCAN</span> - <a asp-controller="Home" asp-action="Privacy">Privacidad</a>
+            &copy; 2026 - <span class="fw-bold">AXCAN</span> - <a asp-controller="Home" asp-action="Index">Koi Labs</a> [cite: 174]
         </div>
     </footer>
 
