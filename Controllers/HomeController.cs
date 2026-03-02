@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using axcan.Data; 
 using axcan.Models; 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http;
 
 namespace axcan.Controllers
 {
@@ -15,10 +16,8 @@ namespace axcan.Controllers
         }
 
         // --- 1. VISTAS PÚBLICAS ---
-
         public async Task<IActionResult> Index() 
         {
-            // Traemos los negocios de la DB para las cards estilo Little Caesars
             var empresas = await _context.empresas.ToListAsync();
             return View(empresas);
         }
@@ -37,24 +36,20 @@ namespace axcan.Controllers
         public async Task<IActionResult> ProcesarRegistro(Usuario u)
         {
             try {
-                // Verifica si el nombre de usuario ya existe
                 var existe = await _context.usuarios.AnyAsync(x => x.username == u.username);
-                if (existe)
-                {
-                    ViewBag.Error = "Ese nombre de usuario ya está ocupado.";
+                if (existe) {
+                    ViewBag.Error = "Ese nombre de usuario ya existe.";
                     return View("registro");
                 }
-
-                u.rol = "usuario"; // Todos nacen como usuario base
+                u.rol = "usuario"; 
                 u.fecha_registro = DateTime.Now;
                 _context.usuarios.Add(u);
                 await _context.SaveChangesAsync();
-                
-                TempData["Mensaje"] = "¡Cuenta creada exitosamente! Por favor inicia sesión.";
+                TempData["Mensaje"] = "¡Cuenta creada! Ya puedes iniciar sesión.";
                 return RedirectToAction("login");
             }
             catch (Exception ex) {
-                ViewBag.Error = "No pudimos crear la cuenta: " + ex.Message;
+                ViewBag.Error = "Error al registrar: " + ex.Message;
                 return View("registro");
             }
         }
@@ -62,26 +57,22 @@ namespace axcan.Controllers
         [HttpPost]
         public async Task<IActionResult> ProcesarLogin(string username, string password)
         {
-            // Validación real contra la base de datos
             var user = await _context.usuarios
-                .FirstOrDefaultAsync(u => u.username == username && u.password == password);
+                .FirstOrDefaultAsync(u => (u.username == username || u.correo == username) && u.password == password);
 
-            if (user != null)
-            {
+            if (user != null) {
                 HttpContext.Session.SetInt32("UsuarioId", user.id_usuario);
                 HttpContext.Session.SetString("UsuarioNombre", user.nombre);
                 HttpContext.Session.SetString("UsuarioRol", user.rol);
                 return RedirectToAction("Index");
             }
-            
-            // ✅ SI FALLA EL LOGIN: Mandamos el mensaje de error a la vista
-            ViewBag.Error = "Usuario o contraseña incorrectos, padrino.";
+            ViewBag.Error = "Usuario o contraseña incorrectos."; 
             return View("login");
         }
 
         public IActionResult Logout()
         {
-            HttpContext.Session.Clear(); // Limpia toda la sesión
+            HttpContext.Session.Clear();
             return RedirectToAction("login");
         }
 
@@ -94,12 +85,12 @@ namespace axcan.Controllers
                 var userId = HttpContext.Session.GetInt32("UsuarioId");
                 if (userId == null) return RedirectToAction("login");
 
-                e.id_administrador = userId; // Vincula el negocio al usuario actual
+                e.id_administrador = userId; 
                 _context.empresas.Add(e);
                 
                 var usuario = await _context.usuarios.FindAsync(userId);
                 if (usuario != null) {
-                    usuario.rol = "administrador"; // ASCENSO AUTOMÁTICO AL REGISTRAR EMPRESA
+                    usuario.rol = "administrador";
                     _context.usuarios.Update(usuario);
                     HttpContext.Session.SetString("UsuarioRol", "administrador");
                 }
@@ -108,7 +99,7 @@ namespace axcan.Controllers
                 return RedirectToAction("Admin");
             }
             catch (Exception ex) {
-                ViewBag.Error = "Error al registrar el negocio: " + ex.Message;
+                ViewBag.Error = "Error al registrar negocio: " + ex.Message;
                 return View("registronegocio");
             }
         }
