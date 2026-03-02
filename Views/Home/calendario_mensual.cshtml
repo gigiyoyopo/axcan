@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="..\..\wwwroot\css\cal.css">
+    <link rel="stylesheet" href="..\..\wwwroot\css\modal.css">
+</head>
+<body>
+<div id="calendar_absolute-container">
+    <div id="modal" class="modal">
+  <div class="modal-content">
+    <span id="closeModal" class="close">&times;</span>
+        <div id="pupUp-header">
+            <h4 id="dateString"></h4>
+            <h5 id="dateNumber"></h5>
+        </div>
+        <div id="popUp-content">
+            <form action="">
+                <div id="form-flex">
+                    <br>
+                <label for="service" id="service-id">Servicio:</label>
+                <select name="service" id="service">
+                    <option value="null" selected="true" disabled="true" id="selected-option">Seleccione una opción</option>
+                    <option value="1">Servicio 1</option>
+                    <option value="2">Servicio 2</option>
+                    <option value="3">Servicio 3</option>
+                    <option value="4">Servicio 4</option>
+                </select>
+                <br>
+                <label for="hour" id="hour-id">Horario:</label>
+                <select name="hour" id="hour" disabled>
+                    <option value="null" selected disabled id="selected-option-1">Seleccione una opción</option>
+                    <option value="1">Horario 1</option>
+                    <option value="2">Horario 2</option>
+                    <option value="3">Horario 3</option>
+                    <option value="4">Horario 4</option>
+                </select>
+                <br>
+                <label for="server" id="server-id">Atiende:</label>
+                <select name="server" id="server" disabled>
+                    <option value="null" selected disabled id="selected-option-2">Seleccione una opción</option>
+                    <option value="1">Servidor 1</option>
+                    <option value="2">Servidor 2</option>
+                    <option value="3">Servidor 3</option>
+                    <option value="4">Servidor 4</option>
+                </select>
+                <br>
+                <br>
+                </div>
+
+                <div id="p_form-flex">
+                    <p id="price">Precio:</p>
+                </div>
+
+                <div id="buttons_form-flex">
+                    <button type="submit" name="confirm" id="confirm" disabled>Confirmar</button>
+                    <button type="button" name="cancel" id="cancel">Cancelar</button>
+                </div>                
+            </form>
+    </div>
+    </div>
+    </div>
+
+
+    <div id="calendar">
+        <h3 id="month"> </h3>
+
+        <div id="flex-container">
+            <button type="button" id="prev_month"><</button>
+            <div id="calendar-container">
+
+            <table id="calendar-table">
+                <thead id="calendar-header">
+                    <tr id="calendar-days">
+                        <th>Domingo</th>
+                        <th>Lunes</th>
+                        <th>Martes</th>
+                        <th>Miercoles</th>
+                        <th>Jueves</th>
+                        <th>Viernes</th>
+                        <th>Sábado</th>
+                    </tr>
+                </thead>
+                <tbody id="calendar-numbers">
+                </tbody>
+            </table>
+            </div>
+            <button type="button" id="next_month">></button>
+        </div>
+    </div>
+</div>
+
+</body>
+
+<script src="..\..\wwwroot\js\cal.js"></script>
+</html>
