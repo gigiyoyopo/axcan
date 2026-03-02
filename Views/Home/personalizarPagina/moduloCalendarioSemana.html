@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+        <link rel="stylesheet" href="popup.css">
+    <link rel="stylesheet" href="calendar.css">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+</head>
+<body>
+
+
+
+    <div class="container-fluid" id="bootstap-container" style="height: 85vh; border: solid 2px red;">
+
+        <div class="row">
+          <!---Calendar container start--->
+        <div id="calendar-content-container" class="container text-center" style="border: solid 2px blue; height: 100%;">
+
+            <div class="row" style="height: 100%;">
+                
+
+                    <!----Left calendar container start---->
+                <div id="left-calendar-container" class="col-8" style="border: 2px black solid; height: 85vh;"> <!---->
+                    <header id="calendar-header-container"> <!---->
+                        <h3>Agendar</h3>
+                        <p id="current-date">Hoy: Viernes 27 de febrero de 2026</p> <!---->
+                    </header>
+                    
+                    
+                    <!----Calendar in container start---->
+                    <div id="calendar_absolute-container"> <!--Contenedor con todos los elementos del calendario, incluyendo el modal-->
+
+
+                        <div id="calendar"> <!--Contenedor de los botones, y cuadro del calendario-->
+                            <h3 id="month"> </h3> <!--Aquí, el JavaScript escribe el mes que se muestra-->
+
+                            <div id="flex-container"><!--Contenedor flex para acomodar los botones a los lados y el calendario en medio-->
+                                <button type="button" id="prev_month"><span><</span></button><!--Boton para ir al mes anterior-->
+                                <div id="calendar-container"><!--Contenedor de los días del mes-->
+
+                                    <table id="calendar-table"><!--Tabla de los dáis-->
+                                        <thead id="calendar-header"> <!--Contenedor de los nombres de los días de la semana-->
+                                            <tr id="calendar-days"> <!--Fila que almacena las casillas de la tabla donde se escriben los nombres de los días de la semana-->
+                                            </tr>
+                                        </thead>
+                                        <tbody id="calendar-numbers"> <!--Contenedor donde JavaScript crea las filas y las semanas del mes-->
+                                        </tbody>
+                                    </table>
+
+                                </div>
+                                <button type="button" id="next_month">></button><!--Boton para ir al siguiente mes-->
+                            </div>
+                        </div>
+                    </div>
+                    <!----Calendar in container start---->
+
+
+                </div>
+                <!----Left Left calendar container  end---->
+
+                
+
+
+                    <!----Right calendar container start---->
+                <div id="right-calendar-container" class="col-4" style="border: 2px black solid">
+                    <form action="">
+
+                        <h5 id="dateString">Seleccione una fecha</h5>
+
+                        <section id="calendar-input-group">
+                            <section id="calendar-input">
+                                <h3>Horarios disponibles</h3>
+                                <p>Mañana</p>
+                                    <button id="calendar-button">09:00</button>
+                                    <button id="calendar-button">10:00</button>
+                                    <button id="calendar-button">11:00</button>
+                                    <button id="calendar-button">12:00</button>
+
+                                <p>Tarde</p>
+                                    <button id="calendar-button">13:00</button>
+                                    <button id="calendar-button">14:00</button>
+                                    <button id="calendar-button">15:00</button>
+                                    <button id="calendar-button">16:00</button>
+                                    <button id="calendar-button">17:00</button>
+                                    <button id="calendar-button">18:00</button>
+                                                                
+                                <p>Noche</p>
+                                    <button id="calendar-button">19:00</button>
+                                    <button id="calendar-button">20:00</button>
+                                    <button id="calendar-button">21:00</button>
+
+                                <button type="submit">Agendar</button>
+                            </section>
+                        </section>
+                        
+                    </form>
+                </div>
+                    <!----Right calendar container end---->
+            
+            
+            </div>
+        <!---Calendar container end--->
+        </div>
+    
+        </div>
+</div>
+</body>
+<script src="wCal.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.min.js" integrity="sha384-G/EV+4j2dNv+tEPo3++6LCgdCROaejBqfUeNjuKAiuXbjrxilcCdDz6ZAVfHWe1Y" crossorigin="anonymous"></script>
+</html>
