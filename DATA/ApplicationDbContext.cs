@@ -13,6 +13,7 @@ namespace axcan.Data
         // Tus tablas
         public DbSet<Usuario> usuarios { get; set; }
         public DbSet<Empresa> empresas { get; set; } // <--- Aquí usa Empresa
+        public DbSet<Secretario> secretarios { get; set; }
 
         // SOLO UN MÉTODO OnModelCreating (ESTO ARREGLA EL ERROR CS0111)
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -24,6 +25,9 @@ namespace axcan.Data
 
             // Configuramos la tabla de empresas
             modelBuilder.Entity<Empresa>().ToTable("empresas", schema: "public");
+
+            // Configuramos la tabla de secretarios
+            modelBuilder.Entity<Secretario>().ToTable("secretarios", schema: "public");
         }
     }
 }

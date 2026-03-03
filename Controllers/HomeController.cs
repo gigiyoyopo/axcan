@@ -1,4 +1,4 @@
-  using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using axcan.Data; 
 using axcan.Models; 
 using Microsoft.EntityFrameworkCore;
@@ -121,7 +121,7 @@ namespace axcan.Controllers
             return RedirectToAction("ConfiguracionDeCuenta");
         }
 
-        // --- 3. LÓGICA DE NEGOCIO ---
+        // --- 3. LÓGICA DE NEGOCIO (CRM Y PLANTILLAS) ---
 
         [HttpPost]
         public async Task<IActionResult> GuardarEmpresa(Empresa e, IFormFile logoArchivo, string rubroElegido, string rubroOtro)
@@ -133,7 +133,7 @@ namespace axcan.Controllers
                 e.rubro = (rubroElegido == "Otros") ? rubroOtro : rubroElegido;
 
                 if (logoArchivo != null && logoArchivo.Length > 0) {
-                    e.logotipo_url = await GuardarArchivo(logoArchivo, "logos");
+                    e.logotipo_url = await GuardarArchivoPersonalizado(logoArchivo, "logos");
                 }
 
                 e.id_administrador = userId;
@@ -156,7 +156,7 @@ namespace axcan.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> EditarNegocio(Empresa e, IFormFile logoArchivo, string rubroElegido, string rubroOtro)
+        public async Task<IActionResult> EditarNegocio(Empresa e, IFormFile logoArchivo, IFormFile nuevoBanner, string rubroElegido, string rubroOtro)
         {
             try {
                 var empresaDb = await _context.empresas.FindAsync(e.id_empresa);
@@ -168,7 +168,7 @@ namespace axcan.Controllers
                 empresaDb.ubicacion_lng = e.ubicacion_lng;
 
                 if (logoArchivo != null && logoArchivo.Length > 0) {
-                    empresaDb.logotipo_url = await GuardarArchivo(logoArchivo, "logos");
+                    empresaDb.logotipo_url = await GuardarArchivoPersonalizado(logoArchivo, "logos");
                 }
 
                 _context.empresas.Update(empresaDb);
@@ -189,7 +189,8 @@ namespace axcan.Controllers
             return RedirectToAction("login");
         }
 
-        private async Task<string> GuardarArchivo(IFormFile archivo, string carpeta)
+        // Método auxiliar para guardar recursos de Axel
+        private async Task<string> GuardarArchivoPersonalizado(IFormFile archivo, string carpeta)
         {
             string nombre = Guid.NewGuid().ToString() + Path.GetExtension(archivo.FileName);
             string rutaCarpeta = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", carpeta);
@@ -202,5 +203,17 @@ namespace axcan.Controllers
             }
             return $"/{carpeta}/{nombre}";
         }
-    }
+    
+    [Route("reservar/{nombreUrl}")]
+public async Task<IActionResult> PaginaReserva(string nombreUrl)
+{
+    // Buscamos el negocio por su nombre o ID
+    var empresa = await _context.empresas
+        .FirstOrDefaultAsync(e => e.nombre_empresa.Replace(" ", "-").ToLower() == nombreUrl.ToLower());
+
+    if (empresa == null) return NotFound();
+
+    // Pasamos los datos de personalización (color, logo, banner, plantilla) a la vista
+    return View("Plantilla_" + empresa.id_plantilla, empresa); 
+}}
 }
