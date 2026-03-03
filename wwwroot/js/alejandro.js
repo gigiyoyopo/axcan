@@ -58,4 +58,4 @@ window.onload = function () {
             alert("Validando credenciales en PostgreSQL...");
         });
     }
-});
+}
