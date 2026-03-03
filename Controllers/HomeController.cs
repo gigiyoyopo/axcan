@@ -152,7 +152,7 @@ namespace axcan.Controllers
             }
             catch (Exception ex) {
                 ViewBag.Error = "Error al registrar: " + ex.Message;
-                return View("registronegocio");
+                return View("registron  egocio");
             }
         }
 
