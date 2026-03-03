@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using axcan.Models; 
+using axcan.Models;
 
 namespace axcan.Data
 {
@@ -10,10 +10,9 @@ namespace axcan.Data
         {
         }
 
-        // Definición de las tablas en C#
         public DbSet<Usuario> usuarios { get; set; }
         public DbSet<Empresa> empresas { get; set; }
-        public DbSet<Servicio> servicios { get; set; }
+        public DbSet<Servicio> servicios { get; set; } 
         public DbSet<Secretario> secretarios { get; set; }
         public DbSet<HorarioNegocio> horarios_negocio { get; set; }
         public DbSet<Cita> citas { get; set; }
@@ -21,14 +20,9 @@ namespace axcan.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-
-            // Esto asegura que Render y Supabase se entiendan con los nombres de las tablas
-            modelBuilder.Entity<Usuario>().ToTable("usuarios");
-            modelBuilder.Entity<Empresa>().ToTable("empresas");
-            modelBuilder.Entity<Servicio>().ToTable("servicios");
-            modelBuilder.Entity<Secretario>().ToTable("secretarios");
-            modelBuilder.Entity<HorarioNegocio>().ToTable("horarios_negocio");
-            modelBuilder.Entity<Cita>().ToTable("citas");
+            
+            // Forzamos el mapeo a las tablas de Supabase
+            modelBuilder.Entity<Servicio>().ToTable("servicios", schema: "public");
         }
     }
 }
