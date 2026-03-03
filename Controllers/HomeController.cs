@@ -53,65 +53,59 @@ namespace axcan.Controllers
                 return View("registro");
             }
         }
+[HttpPost]
+public async Task<IActionResult> ProcesarLogin(string username, string password)
+{
+    // Fix: Buscamos por username o correo para que siempre entre
+    var user = await _context.usuarios
+        .FirstOrDefaultAsync(u => (u.username == username || u.correo == username) && u.password == password);
 
-        [HttpPost]
-        public async Task<IActionResult> ProcesarLogin(string username, string password)
-        {
-            var user = await _context.usuarios
-                .FirstOrDefaultAsync(u => (u.username == username || u.correo == username) && u.password == password);
-
-            if (user != null) {
-                HttpContext.Session.SetInt32("UsuarioId", user.id_usuario);
-                HttpContext.Session.SetString("UsuarioNombre", user.nombre);
-                HttpContext.Session.SetString("UsuarioRol", user.rol);
-                return RedirectToAction("Index");
-            }
-            ViewBag.Error = "Usuario o contraseña incorrectos."; 
-            return View("login");
-        }
-
-        public IActionResult Logout()
-        {
-            HttpContext.Session.Clear();
-            return RedirectToAction("login");
-        }
-
+    if (user != null) {
+        HttpContext.Session.SetInt32("UsuarioId", user.id_usuario);
+        HttpContext.Session.SetString("UsuarioNombre", user.nombre);
+        HttpContext.Session.SetString("UsuarioRol", user.rol);
+        return RedirectToAction("Index");
+    }
+    
+    ViewBag.Error = "Usuario o contraseña incorrectos."; 
+    return View("login");
+}
         // --- 3. LÓGICA DE NEGOCIO (EL ASCENSO) ---
 
-        [HttpPost]
        [HttpPost]
-public async Task<IActionResult> GuardarEmpresa(Empresa e)
+public async Task<IActionResult> GuardarEmpresa(Empresa e, IFormFile logoArchivo)
 {
-    try 
-    {
-        // 1. Jalamos el ID del usuario de la sesión
+    try {
         var userId = HttpContext.Session.GetInt32("UsuarioId");
         if (userId == null) return RedirectToAction("login");
 
-        // 2. Asignamos quién es el dueño
-        e.id_administrador = userId;
-        
-        // 3. Agregamos la empresa a la tabla
-        _context.empresas.Add(e);
+        // Lógica para el Logo (Guardado local por ahora)
+        if (logoArchivo != null && logoArchivo.Length > 0) {
+            string nombreArchivo = Guid.NewGuid().ToString() + "_" + logoArchivo.FileName;
+            string ruta = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/imagenesaxcan", nombreArchivo);
+            using (var stream = new FileStream(ruta, FileMode.Create)) {
+                await logoArchivo.CopyToAsync(stream);
+            }
+            e.logotipo_url = "/imagenesaxcan/" + nombreArchivo;
+        }
 
-        // 4. EL ASCENSO: Si es usuario normal, lo volvemos Admin
+        e.id_administrador = userId;
+        _context.empresas.Add(e);
+        
+        // Ascenso a Admin
         var usuario = await _context.usuarios.FindAsync(userId);
-        if (usuario != null && usuario.rol != "administrador")
-        {
+        if (usuario != null) {
             usuario.rol = "administrador";
             _context.usuarios.Update(usuario);
-            // Actualizamos la sesión para que el Layout cambie el menú al instante
             HttpContext.Session.SetString("UsuarioRol", "administrador");
         }
 
         await _context.SaveChangesAsync();
-        
-        TempData["Mensaje"] = "¡Negocio registrado! Ya tienes poderes de Administrador.";
         return RedirectToAction("Admin");
     }
-    catch (Exception ex)
-    {
-        ViewBag.Error = "No se pudo guardar: " + ex.Message;
+    catch (Exception ex) {
+        ViewBag.Error = "Error: " + ex.Message;
         return View("registronegocio");
     }
-}}}
+}
+}}
