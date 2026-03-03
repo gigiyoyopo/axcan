@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using axcan.Models; // <-- ESTO ES LO QUE LE FALTA PARA ENCONTRAR 'SERVICIO'
+using axcan.Models; 
 
 namespace axcan.Data
 {
@@ -10,11 +10,11 @@ namespace axcan.Data
         {
         }
 
-        // --- TABLAS DEL SISTEMA ---
+        // Definición de las tablas en C#
         public DbSet<Usuario> usuarios { get; set; }
         public DbSet<Empresa> empresas { get; set; }
         public DbSet<Servicio> servicios { get; set; }
-        public DbSet<Secretario> secretarios { get; set; } 
+        public DbSet<Secretario> secretarios { get; set; }
         public DbSet<HorarioNegocio> horarios_negocio { get; set; }
         public DbSet<Cita> citas { get; set; }
 
@@ -22,13 +22,13 @@ namespace axcan.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // Forzamos a que usen el esquema public de Supabase
-            modelBuilder.Entity<Usuario>().ToTable("usuarios", schema: "public");
-            modelBuilder.Entity<Empresa>().ToTable("empresas", schema: "public");
-            modelBuilder.Entity<Servicio>().ToTable("servicios", schema: "public");
-            modelBuilder.Entity<Secretario>().ToTable("secretarios", schema: "public");
-            modelBuilder.Entity<HorarioNegocio>().ToTable("horarios_negocio", schema: "public");
-            modelBuilder.Entity<Cita>().ToTable("citas", schema: "public");
+            // Esto asegura que Render y Supabase se entiendan con los nombres de las tablas
+            modelBuilder.Entity<Usuario>().ToTable("usuarios");
+            modelBuilder.Entity<Empresa>().ToTable("empresas");
+            modelBuilder.Entity<Servicio>().ToTable("servicios");
+            modelBuilder.Entity<Secretario>().ToTable("secretarios");
+            modelBuilder.Entity<HorarioNegocio>().ToTable("horarios_negocio");
+            modelBuilder.Entity<Cita>().ToTable("citas");
         }
     }
 }
