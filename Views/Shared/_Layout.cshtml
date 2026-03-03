@@ -4,102 +4,86 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Axcan</title>
+    <title>@ViewData["Title"] - AXCAN</title>
     
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/axcan.styles.css" asp-append-version="true" />
-    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="~/css/estilo.css">
+    <link rel="stylesheet" href="~/css/carrousel.css">
+    
+    <style>
+        /* Estilos de Karla integrados */
+        .card-negocio { transition: transform 0.3s ease; border-radius: 15px !important; }
+        .card-negocio:hover { transform: translateY(-10px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .banner-card { height: 160px; object-fit: cover; }
+        .logo-navbar { max-height: 40px; }
+        .navbar { background-color: white !important; }
+    </style>
 </head>
-<body>
-    <header>
-        <nav class="navbar navbar-expand-lg navbar-dark bg-dark border-bottom shadow-sm mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand fw-bold" asp-controller="Home" asp-action="Index">
-                    [cite_start]<i class="bi bi-geo-alt-fill text-primary"></i> AXCAN [cite: 158]
-                </a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse">
-                    [cite_start]<span class="navbar-toggler-icon"></span> [cite: 159]
-                </button>
-                
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            [cite_start]<a class="nav-link text-white" asp-controller="Home" asp-action="Index">Inicio</a> [cite: 160]
-                        </li>
-                        <li class="nav-item">
-                            [cite_start]<a class="nav-link text-white" asp-controller="Home" asp-action="acercade">Acerca de</a> [cite: 161]
-                        </li>
-                        
-                        @* --- LÓGICA DE ROLES: ACCESO DIFERENCIADO --- *@
-                        @if (Context.Session.GetString("UsuarioRol") == "administrador")
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link text-info fw-bold" asp-controller="Home" asp-action="Admin">
-                                   <i class="bi bi-speedometer2"></i> Dashboard Admin
-                                [cite_start]</a> [cite: 172]
-                            </li>
-                        }
-                        else if (Context.Session.GetString("UsuarioRol") == "usuario")
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link text-warning fw-bold" asp-controller="Home" asp-action="registronegocio">
-                                   <i class="bi bi-plus-circle"></i> Registrar mi Empresa
-                                [cite_start]</a> [cite: 163, 172]
-                            </li>
-                        }
-                    </ul>
+<body class="bg-white d-flex flex-column min-vh-100">
 
-                    @* --- MENÚ DE USUARIO / PERFIL --- *@
-                    <ul class="navbar-nav">
-                        @if (Context.Session.GetString("UsuarioNombre") != null)
-                        {
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle text-white" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
-                                   [cite_start]<i class="bi bi-person-circle"></i> @Context.Session.GetString("UsuarioNombre") [cite: 166]
-                                </a>
-                                <ul class="dropdown-menu dropdown-menu-end shadow">
-                                    [cite_start]<li><a class="dropdown-item" asp-controller="Home" asp-action="ConfiguracionCuenta"><i class="bi bi-gear"></i> Configuración</a></li> [cite: 19, 167]
-                                    @if (Context.Session.GetString("UsuarioRol") == "administrador")
-                                    {
-                                        <li><a class="dropdown-item text-primary" asp-controller="Home" asp-action="Admin"><i class="bi bi-layout-text-sidebar-reverse"></i> Ir al Panel</a></li>
-                                    }
-                                    <li><hr class="dropdown-divider"></li>
-                                    [cite_start]<li><a class="dropdown-item text-danger" asp-controller="Home" asp-action="Logout"><i class="bi bi-box-arrow-right"></i> Salir</a></li> [cite: 168]
-                                </ul>
-                            </li>
-                        }
-                        else
-                        {
-                            <li class="nav-item">
-                                [cite_start]<a class="nav-link text-white" asp-controller="Home" asp-action="login">Entrar</a> [cite: 170]
-                            </li>
-                            <li class="nav-item">
-                                [cite_start]<a class="btn btn-primary btn-sm mt-1 ms-lg-2" asp-controller="Home" asp-action="registro">Crear Cuenta</a> [cite: 171]
-                            </li>
-                        }
-                    </ul>
+    <nav class="navbar navbar-expand-lg navbar-light sticky-top border-bottom">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" asp-controller="Home" asp-action="Index">
+                <img src="~/imagenesaxcan/logo_axcan.png" alt="Logo AXCAN" class="logo-navbar">
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Home" asp-action="acercade">Acerca de Koi Labs</a>
+                    </li>
+                </ul>
+                
+                <div class="d-flex align-items-center gap-3">
+                    @* LÓGICA DE USUARIO LOGUEADO *@
+                    @if (Context.Session.GetString("UsuarioNombre") != null)
+                    {
+                        <div class="dropdown">
+                            <button class="btn btn-outline-dark dropdown-toggle rounded-pill" type="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-person-circle"></i> @Context.Session.GetString("UsuarioNombre")
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                                <li><a class="dropdown-item" asp-action="ConfiguracionCuenta">Configuración</a></li>
+                                @if (Context.Session.GetString("UsuarioRol") == "administrador")
+                                {
+                                    <li><a class="dropdown-item text-primary fw-bold" asp-action="Admin">Mi Dashboard</a></li>
+                                }
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" asp-action="Logout">Cerrar Sesión</a></li>
+                            </ul>
+                        </div>
+                    }
+                    else
+                    {
+                        <a asp-action="login" class="nav-link">Entrar</a>
+                    }
+
+                    @* BOTÓN DE REGISTRO / ACCIÓN *@
+                    @if (Context.Session.GetString("UsuarioRol") != "administrador")
+                    {
+                        <a asp-controller="Home" asp-action="registronegocio" class="btn btn-primary rounded-pill px-4 fw-bold">
+                            Registra tu negocio
+                        </a>
+                    }
                 </div>
             </div>
-        </nav>
-    </header>
-
-    <div class="container">
-        <main role="main" class="pb-3">
-            [cite_start]@RenderBody() [cite: 173]
-        </main>
-    </div>
-
-    <footer class="border-top footer text-muted bg-light mt-auto py-3">
-        <div class="container text-center">
-            &copy; [cite_start]2026 - <span class="fw-bold">AXCAN</span> - <a asp-controller="Home" asp-action="Index">Koi Labs</a> [cite: 174]
         </div>
+    </nav>
+
+    <main role="main">
+        @RenderBody()
+    </main>
+
+    <footer class="py-4 border-top text-center text-muted mt-auto bg-white">
+        <small>© 2026 AXCAN · Todos los derechos reservados · Koi Labs</small>
     </footer>
 
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
