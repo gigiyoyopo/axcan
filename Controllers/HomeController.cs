@@ -79,38 +79,39 @@ namespace axcan.Controllers
         // --- 3. LÓGICA DE NEGOCIO (EL ASCENSO) ---
 
         [HttpPost]
-        public async Task<IActionResult> GuardarEmpresa(Empresa e)
+       [HttpPost]
+public async Task<IActionResult> GuardarEmpresa(Empresa e)
+{
+    try 
+    {
+        // 1. Jalamos el ID del usuario de la sesión
+        var userId = HttpContext.Session.GetInt32("UsuarioId");
+        if (userId == null) return RedirectToAction("login");
+
+        // 2. Asignamos quién es el dueño
+        e.id_administrador = userId;
+        
+        // 3. Agregamos la empresa a la tabla
+        _context.empresas.Add(e);
+
+        // 4. EL ASCENSO: Si es usuario normal, lo volvemos Admin
+        var usuario = await _context.usuarios.FindAsync(userId);
+        if (usuario != null && usuario.rol != "administrador")
         {
-            try {
-                var userId = HttpContext.Session.GetInt32("UsuarioId");
-                if (userId == null) return RedirectToAction("login");
-
-                e.id_administrador = userId; 
-                _context.empresas.Add(e);
-                
-                var usuario = await _context.usuarios.FindAsync(userId);
-                if (usuario != null) {
-                    usuario.rol = "administrador";
-                    _context.usuarios.Update(usuario);
-                    HttpContext.Session.SetString("UsuarioRol", "administrador");
-                }
-
-                await _context.SaveChangesAsync();
-                return RedirectToAction("Admin");
-            }
-            catch (Exception ex) {
-                ViewBag.Error = "Error al registrar negocio: " + ex.Message;
-                return View("registronegocio");
-            }
+            usuario.rol = "administrador";
+            _context.usuarios.Update(usuario);
+            // Actualizamos la sesión para que el Layout cambie el menú al instante
+            HttpContext.Session.SetString("UsuarioRol", "administrador");
         }
 
-        public async Task<IActionResult> ConfiguracionCuenta()
-        {
-            var userId = HttpContext.Session.GetInt32("UsuarioId");
-            if (userId == null) return RedirectToAction("login");
-
-            var usuario = await _context.usuarios.FindAsync(userId);
-            return View(usuario);
-        }
+        await _context.SaveChangesAsync();
+        
+        TempData["Mensaje"] = "¡Negocio registrado! Ya tienes poderes de Administrador.";
+        return RedirectToAction("Admin");
     }
-}
+    catch (Exception ex)
+    {
+        ViewBag.Error = "No se pudo guardar: " + ex.Message;
+        return View("registronegocio");
+    }
+}}}
