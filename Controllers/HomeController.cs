@@ -157,27 +157,47 @@ public async Task<IActionResult> ActualizarPerfil(Usuario u)
 [HttpPost]
 public async Task<IActionResult> EditarNegocio(Empresa e, IFormFile logoArchivo, string rubroElegido, string rubroOtro)
 {
-    var empresaDb = await _context.empresas.FindAsync(e.id_empresa);
-    if (empresaDb == null) return NotFound();
-
-    empresaDb.nombre_empresa = e.nombre_empresa;
-    empresaDb.rubro = (rubroElegido == "Otros") ? rubroOtro : rubroElegido;
-    empresaDb.ubicacion_lat = e.ubicacion_lat;
-    empresaDb.ubicacion_lng = e.ubicacion_lng;
-
-    if (logoArchivo != null && logoArchivo.Length > 0)
+    try 
     {
-        string nombre = Guid.NewGuid().ToString() + Path.GetExtension(logoArchivo.FileName);
-        string ruta = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/logos", nombre);
-        using (var stream = new FileStream(ruta, FileMode.Create)) { await logoArchivo.CopyToAsync(stream); }
-        empresaDb.logotipo_url = "/logos/" + nombre;
+        var empresaDb = await _context.empresas.FindAsync(e.id_empresa);
+        if (empresaDb == null) return NotFound();
+
+        // 1. Lógica de Rubro (Si es "Otros", usa el texto escrito)
+        empresaDb.rubro = (rubroElegido == "Otros") ? rubroOtro : rubroElegido;
+        
+        // 2. Datos básicos
+        empresaDb.nombre_empresa = e.nombre_empresa;
+        empresaDb.ubicacion_lat = e.ubicacion_lat;
+        empresaDb.ubicacion_lng = e.ubicacion_lng;
+
+        // 3. Manejo de Logo
+        if (logoArchivo != null && logoArchivo.Length > 0)
+        {
+            string nombreArchivo = Guid.NewGuid().ToString() + Path.GetExtension(logoArchivo.FileName);
+            string rutaCarpeta = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/logos");
+            
+            if (!Directory.Exists(rutaCarpeta)) Directory.CreateDirectory(rutaCarpeta);
+
+            string rutaCompleta = Path.Combine(rutaCarpeta, nombreArchivo);
+            using (var stream = new FileStream(rutaCompleta, FileMode.Create))
+            {
+                await logoArchivo.CopyToAsync(stream);
+            }
+            empresaDb.logotipo_url = "/logos/" + nombreArchivo;
+        }
+
+        _context.empresas.Update(empresaDb);
+        await _context.SaveChangesAsync();
+        
+        TempData["Mensaje"] = "¡Negocio actualizado con éxito!";
+        return RedirectToAction("Admin");
     }
-
-    _context.empresas.Update(empresaDb);
-    await _context.SaveChangesAsync();
-    return RedirectToAction("Admin");
+    catch (Exception ex)
+    {
+        ViewBag.Error = "Error al actualizar: " + ex.Message;
+        return RedirectToAction("Admin");
+    }
 }
-
 // --- GUARDAR PERSONALIZACIÓN Y CRM ---
 [HttpPost]
 public async Task<IActionResult> GuardarConfiguracionNegocio(Empresa e, IFormFile nuevoLogo, IFormFile nuevoBanner)
@@ -221,37 +241,5 @@ private async Task<string> GuardarArchivo(IFormFile archivo, string carpeta)
         await archivo.CopyToAsync(stream);
     }
     return $"/{carpeta}/{nombre}";
-}
-//--editar neogcios--
-[HttpPost]
-public async Task<IActionResult> EditarNegocio(Empresa e, IFormFile nuevoLogo, string rubroElegido, string rubroOtro)
-{
-    var empresaDb = await _context.empresas.FindAsync(e.id_empresa);
-    if (empresaDb == null) return NotFound();
-
-    // 1. Lógica de Rubro dinámico
-    empresaDb.rubro = (rubroElegido == "Otros") ? rubroOtro : rubroElegido;
-    
-    // 2. Datos básicos
-    empresaDb.nombre_empresa = e.nombre_empresa;
-    empresaDb.ubicacion_lat = e.ubicacion_lat;
-    empresaDb.ubicacion_lng = e.ubicacion_lng;
-
-    // 3. Si subió un logo nuevo, lo reemplazamos
-    if (nuevoLogo != null && nuevoLogo.Length > 0)
-    {
-        string nombreArchivo = Guid.NewGuid().ToString() + Path.GetExtension(nuevoLogo.FileName);
-        string ruta = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/logos", nombreArchivo);
-        using (var stream = new FileStream(ruta, FileMode.Create)) {
-            await nuevoLogo.CopyToAsync(stream);
-        }
-        empresaDb.logotipo_url = "/logos/" + nombreArchivo;
-    }
-
-    _context.empresas.Update(empresaDb);
-    await _context.SaveChangesAsync();
-    
-    TempData["Mensaje"] = "¡La card de tu negocio ha sido actualizada!";
-    return RedirectToAction("Admin");
 }
 }}
