@@ -11,67 +11,69 @@
                     <div class="d-flex align-items-center">
                         <i class="bi bi-person-gear fs-1 me-3 text-primary"></i>
                         <div>
-                            <h3 class="mb-0">Mi Perfil</h3>
-                            <p class="mb-0 opacity-75">Gestiona la información de tu cuenta en AXCAN</p>
+                            <h3 class="mb-0">Editar Mi Perfil</h3>
+                            <p class="mb-0 opacity-75">Modifica tu información personal en AXCAN</p>
                         </div>
                     </div>
                 </div>
                 <div class="card-body p-4">
-                    @if (TempData["Mensaje"] != null)
-                    {
-                        <div class="alert alert-success alert-dismissible fade show" role="alert">
-                            <i class="bi bi-check-circle-fill me-2"></i> @TempData["Mensaje"]
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    }
-
-                    <div class="row g-4">
-                        <div class="col-12">
-                            <div class="p-3 rounded-3 @(Model.rol == "administrador" ? "bg-info-subtle border border-info" : "bg-light border")">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <h6 class="text-uppercase fw-bold small mb-1">Estatus de la Cuenta</h6>
-                                        <h4 class="mb-0 text-capitalize">
-                                            <i class="bi @(Model.rol == "administrador" ? "bi-patch-check-fill text-info" : "bi-person text-secondary")"></i> 
-                                            @Model.rol
-                                        </h4>
+                    <form asp-action="ActualizarPerfil" method="post">
+                        <div class="row g-4">
+                            
+                            <div class="col-12">
+                                <div class="p-3 rounded-3 @(Model.rol == "administrador" ? "bg-info-subtle border border-info" : "bg-light border")">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="text-uppercase fw-bold small mb-1">Rol Actual</h6>
+                                            <h4 class="mb-0 text-capitalize text-dark">
+                                                <i class="bi @(Model.rol == "administrador" ? "bi-patch-check-fill text-info" : "bi-person text-secondary")"></i> 
+                                                @Model.rol
+                                            </h4>
+                                        </div>
                                     </div>
-                                    @if (Model.rol == "usuario")
-                                    {
-                                        <a asp-action="registronegocio" class="btn btn-warning btn-sm fw-bold">
-                                            🚀 ¡Ascender a Admin!
-                                        </a>
-                                    }
                                 </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Nombre</label>
+                                <input type="text" asp-for="nombre" class="form-control" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Apellido Paterno</label>
+                                <input type="text" asp-for="apellido_paterno" class="form-control" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Apellido Materno</label>
+                                <input type="text" asp-for="apellido_materno" class="form-control" required>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Nombre de Usuario</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">@@</span>
+                                    <input type="text" asp-for="username" class="form-control" required>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Correo Electrónico</label>
+                                <input type="email" asp-for="correo" class="form-control" required>
+                            </div>
+
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold text-danger">Nueva Contraseña</label>
+                                <input type="password" name="password" class="form-control" placeholder="Escribe solo si deseas cambiarla">
+                                <div class="form-text">Si dejas este campo vacío, tu contraseña seguirá siendo la misma.</div>
                             </div>
                         </div>
 
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-muted small">Nombre Completo</label>
-                            <p class="fs-5 border-bottom pb-2">@Model.nombre @Model.apellido_paterno @Model.apellido_materno</p>
+                        <div class="mt-5 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary px-4 fw-bold">
+                                <i class="bi bi-save me-1"></i> Guardar Cambios
+                            </button>
+                            <a asp-action="Index" class="btn btn-outline-secondary">Cancelar</a>
                         </div>
-
-                        <div class="col-md-6">
-                            <label class="form-label fw-bold text-muted small">Nombre de Usuario</label>
-                            <p class="fs-5 border-bottom pb-2">@@@Model.username</p>
-                        </div>
-
-                        <div class="col-md-12">
-                            <label class="form-label fw-bold text-muted small">Correo Electrónico</label>
-                            <p class="fs-5 border-bottom pb-2">@Model.correo</p>
-                        </div>
-
-                        <div class="col-md-6 text-muted small">
-                            <i class="bi bi-calendar-event me-1"></i> Miembro desde: @Model.fecha_registro?.ToString("dd/MM/yyyy")
-                        </div>
-                    </div>
-
-                    <div class="mt-5 d-flex gap-2">
-                        <button class="btn btn-primary" onclick="window.print()">
-                            <i class="bi bi-printer me-1"></i> Imprimir Comprobante
-                        </button>
-                        <a asp-action="Index" class="btn btn-outline-secondary text-dark">Volver</a>
-                    </div>
+                    </form>
                 </div>
             </div>
         </div>

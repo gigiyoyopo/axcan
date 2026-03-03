@@ -158,7 +158,114 @@
                     </div>
                 </div>
             </div>
+            
+@model axcan.Models.Empresa
+@{ Layout = "_Layout"; }
 
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow-sm border-0 p-4 rounded-4">
+                <h5 class="fw-bold mb-3">Personalizar Card</h5>
+                <form asp-action="EditarNegocio" method="post" enctype="multipart/form-data">
+                    <input type="hidden" asp-for="id_empresa" />
+                    
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Nombre del Negocio</label>
+                        <input type="text" asp-for="nombre_empresa" class="form-control">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Mover Ubicación (GPS)</label>
+                        <div id="mapaAdmin" style="height: 200px; border-radius: 10px;" class="border"></div>
+                        <input type="hidden" id="lat" asp-for="ubicacion_lat">
+                        <input type="hidden" id="lng" asp-for="ubicacion_lng">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Logo Nuevo</label>
+                        <input type="file" name="logoArchivo" class="form-control form-control-sm">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 fw-bold">Guardar Cambios</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 p-4 rounded-4">
+                <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link active rounded-pill" data-bs-toggle="pill" data-bs-target="#mensual">Mensual</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link rounded-pill" data-bs-toggle="pill" data-bs-target="#semanal">Semanal</button>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+                    <div class="tab-pane fade show active" id="mensual">
+                        <div class="calendario-mensual-container">
+                            @* Aquí va la lógica de celdas que Axel hizo a mano *@
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h4 class="fw-bold mb-0">Marzo 2026</h4>
+                                <div><button class="btn btn-sm btn-light border"> < </button> <button class="btn btn-sm btn-light border"> > </button></div>
+                            </div>
+                            <table class="table table-bordered text-center">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th>Lun</th><th>Mar</th><th>Mié</th><th>Jue</th><th>Vie</th><th>Sáb</th><th>Dom</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @* Generación manual de días *@
+                                    <tr>
+                                        <td></td><td></td><td></td><td>1</td><td>2</td><td>3</td><td>4</td>
+                                    </tr>
+                                    @* ... resto de la cuadrícula de Axel ... *@
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="semanal">
+                        <div class="calendario-semanal-timeline">
+                            <div class="row g-0 border-top">
+                                <div class="col-2 border-end py-3 text-center bg-light fw-bold">Hora</div>
+                                <div class="col border-end py-3 text-center fw-bold">Lunes 02</div>
+                                <div class="col border-end py-3 text-center fw-bold">Martes 03</div>
+                                @* ... Columnas de Axel ... *@
+                            </div>
+                            <div class="row g-0 border-top">
+                                <div class="col-2 border-end py-2 text-center small text-muted">09:00 AM</div>
+                                <div class="col border-end bg-primary-subtle p-1"><small>Cita: Juan</small></div>
+                                <div class="col border-end"></div>
+                                @* ... Filas de tiempo de Axel ... *@
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        var lat = @Model.ubicacion_lat;
+        var lng = @Model.ubicacion_lng;
+        var map = L.map('mapaAdmin').setView([lat, lng], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        var marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+
+        marker.on('dragend', function (e) {
+            document.getElementById('lat').value = e.target.getLatLng().lat;
+            document.getElementById('lng').value = e.target.getLatLng().lng;
+        });
+    </script>
+}
             <div class="col-12 col-xl-4">
                 <div class="card card-custom p-4 h-100">
                     <h5 class="fw-bold mb-3">Gestión de Servicios</h5>
