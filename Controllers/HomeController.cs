@@ -72,27 +72,42 @@ public async Task<IActionResult> ProcesarLogin(string username, string password)
 }
         // --- 3. LÓGICA DE NEGOCIO (EL ASCENSO) ---
 
-       [HttpPost]
-public async Task<IActionResult> GuardarEmpresa(Empresa e, IFormFile logoArchivo)
+      [HttpPost]
+public async Task<IActionResult> GuardarEmpresa(Empresa e, IFormFile logoArchivo, string rubroElegido, string rubroOtro)
 {
-    try {
+    try 
+    {
         var userId = HttpContext.Session.GetInt32("UsuarioId");
         if (userId == null) return RedirectToAction("login");
 
-        // Lógica para el Logo (Guardado local por ahora)
-        if (logoArchivo != null && logoArchivo.Length > 0) {
-            string nombreArchivo = Guid.NewGuid().ToString() + "_" + logoArchivo.FileName;
-            string ruta = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/imagenesaxcan", nombreArchivo);
-            using (var stream = new FileStream(ruta, FileMode.Create)) {
+        // --- LÓGICA DEL RUBRO (OTROS) ---
+        // Si eligió "Otros", usamos lo que escribió en el cuadro de texto
+        e.rubro = (rubroElegido == "Otros") ? rubroOtro : rubroElegido;
+
+        // --- LÓGICA DEL LOGO (PUNTO 4) ---
+        if (logoArchivo != null && logoArchivo.Length > 0)
+        {
+            string nombreArchivo = Guid.NewGuid().ToString() + Path.GetExtension(logoArchivo.FileName);
+            string rutaCarpeta = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/logos");
+            
+            // Si la carpeta no existe (como en un server nuevo), la creamos
+            if (!Directory.Exists(rutaCarpeta)) Directory.CreateDirectory(rutaCarpeta);
+
+            string rutaCompleta = Path.Combine(rutaCarpeta, nombreArchivo);
+
+            using (var stream = new FileStream(rutaCompleta, FileMode.Create))
+            {
                 await logoArchivo.CopyToAsync(stream);
             }
-            e.logotipo_url = "/imagenesaxcan/" + nombreArchivo;
+
+            e.logotipo_url = "/logos/" + nombreArchivo;
         }
 
+        // --- GUARDADO EN DB ---
         e.id_administrador = userId;
         _context.empresas.Add(e);
-        
-        // Ascenso a Admin
+
+        // ASCENSO DE RANGO
         var usuario = await _context.usuarios.FindAsync(userId);
         if (usuario != null) {
             usuario.rol = "administrador";
@@ -103,9 +118,11 @@ public async Task<IActionResult> GuardarEmpresa(Empresa e, IFormFile logoArchivo
         await _context.SaveChangesAsync();
         return RedirectToAction("Admin");
     }
-    catch (Exception ex) {
-        ViewBag.Error = "Error: " + ex.Message;
+    catch (Exception ex)
+    {
+        ViewBag.Error = "Error al registrar: " + ex.Message;
         return View("registronegocio");
     }
+
 }
 }}
