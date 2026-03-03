@@ -214,6 +214,27 @@ public async Task<IActionResult> PaginaReserva(string nombreUrl)
     if (empresa == null) return NotFound();
 
     // Pasamos los datos de personalización (color, logo, banner, plantilla) a la vista
+ 
     return View("Plantilla_" + empresa.id_plantilla, empresa); 
-}}
+}
+//--ver hoariors disponibles 
+[HttpGet]
+public async Task<JsonResult> GetHorariosDisponibles(int idEmpresa, int diaSeleccionado)
+{
+    // Buscamos el horario configurado para ese día de la semana
+    var horario = await _context.horarios_negocio
+        .FirstOrDefaultAsync(h => h.id_empresa == idEmpresa && h.dia_semana == diaSeleccionado);
+
+    if (horario == null || horario.es_dia_descanso)
+    {
+        return Json(new { disponible = false });
+    }
+
+    return Json(new { 
+        disponible = true, 
+        apertura = horario.hora_apertura.ToString(@"hh\:mm"), 
+        cierre = horario.hora_cierre.ToString(@"hh\:mm") 
+    });
+}
+}
 }

@@ -79,16 +79,9 @@
                 <div class="theme-toggler" onclick="toggleTheme()">
                     <i id="theme-icon" class="bi bi-moon-stars-fill"></i>
                 </div>
-                <div class="dropdown">
-                    <button class="btn btn-outline-secondary dropdown-toggle rounded-pill" type="button" data-bs-toggle="dropdown">
-                        <i class="bi bi-person-circle"></i> Katto Jara
+            
                     </button>
-                    <ul class="dropdown-menu border-0 shadow">
-                        <li><a class="dropdown-item" href="#">Configuración</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item text-danger" href="#">Cerrar Sesión</a></li>
-                    </ul>
-                </div>
+            
             </div>
         </header>
 
@@ -138,7 +131,40 @@
 </div>
             </div>
             <div class="col-12 col-md-6 col-lg-3">
-                <div class="card card-custom p-4 bg-dark text-white">
+               <div class="card card-custom p-4 shadow-sm border-0 rounded-4 mt-4">
+    <h5 class="fw-bold mb-3"><i class="bi bi-clock-history text-primary"></i> Horarios de Atención</h5>
+    <p class="small text-muted">Configura tus horas de apertura y cierre para que tus clientes sepan cuándo agendar.</p>
+    
+    <table class="table table-borderless align-middle">
+        <thead>
+            <tr class="small text-muted">
+                <th>Día</th>
+                <th>Apertura</th>
+                <th>Cierre</th>
+                <th>¿Descanso?</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                string[] dias = { "Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado" };
+                for (int i = 0; i < 7; i++)
+                {
+                    <tr>
+                        <td class="fw-bold">@dias[i]</td>
+                        <td><input type="time" name="apertura_@i" class="form-control form-control-sm" value="09:00"></td>
+                        <td><input type="time" name="cierre_@i" class="form-control form-control-sm" value="18:00"></td>
+                        <td>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="descanso_@i">
+                            </div>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+    <button class="btn btn-primary w-100 fw-bold mt-2">Actualizar Horario Semanal</button>
+</div>
                     <div class="text-muted small fw-bold">SERVICIOS</div>
                     <h2 class="fw-bold">15</h2>
                     <span class="text-warning small fw-bold text-uppercase">Configurados</span>
