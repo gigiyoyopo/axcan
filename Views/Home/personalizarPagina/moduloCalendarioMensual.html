@@ -4,13 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
-        <link rel="stylesheet" href="popup.css">
     <link rel="stylesheet" href="calendar.css">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
 </head>
-<body>
+<body id="body">
 
 
 
@@ -71,32 +70,73 @@
 
                         <h5 id="dateString">Seleccione una fecha</h5>
 
-                        <section id="calendar-input-group">
-                            <section id="calendar-input">
+                        <!--<section id="calendar-input-group">
+                            <section id="calendar-radio-section">
                                 <h3>Horarios disponibles</h3>
                                 <p>Mañana</p>
-                                    <button id="calendar-button">09:00</button>
-                                    <button id="calendar-button">10:00</button>
-                                    <button id="calendar-button">11:00</button>
-                                    <button id="calendar-button">12:00</button>
+                                    <input value="1" type="radio" id="calendar-radio" name="calendar-radio-hour">09:00</input>
+                                    <input value="1" type="radio" id="calendar-radio" name="calendar-radio-hour">10:00</input>
+                                    <input value="1" type="radio" id="calendar-radio" name="calendar-radio-hour">11:00</input>
+                                    <input value="1" type="radio" id="calendar-radio" name="calendar-radio-hour">12:00</input>
 
                                 <p>Tarde</p>
-                                    <button id="calendar-button">13:00</button>
-                                    <button id="calendar-button">14:00</button>
-                                    <button id="calendar-button">15:00</button>
-                                    <button id="calendar-button">16:00</button>
-                                    <button id="calendar-button">17:00</button>
-                                    <button id="calendar-button">18:00</button>
+                                    <input value="1" type="radio" id="calendar-radio" name="calendar-radio-hour">13:00</input>
+                                    <input value="1" type="radio" id="calendar-radio" name="calendar-radio-hour">14:00</input>
+                                    <input value="1" type="radio" id="calendar-radio" name="calendar-radio-hour">15:00</input>
+                                    <input value="1" type="radio" id="calendar-radio" name="calendar-radio-hour">16:00</input>
+                                    <input value="1" type="radio" id="calendar-radio" name="calendar-radio-hour">17:00</input>
+                                    <input value="1" type="radio" id="calendar-radio" name="calendar-radio-hour">18:00</input>
                                                                 
                                 <p>Noche</p>
-                                    <button id="calendar-button">19:00</button>
-                                    <button id="calendar-button">20:00</button>
-                                    <button id="calendar-button">21:00</button>
+                                    <input value="1" type="radio" id="calendar-radio" name="calendar-radio-hour">19:00</input>
+                                    <input value="1" type="radio" id="calendar-radio" name="calendar-radio-hour">20:00</input>
+                                    <input value="1" type="radio" id="calendar-radio" name="calendar-radio-hour" rad="null">21:00</input>
+                                    <input value="null" type="radio" id="calendar-radio" name="calendar-radio-hour" checked ></input>
+                            </section>---->
 
-                                <button type="submit">Agendar</button>
+
+
+                            
+
+
+                            <section id="calendar-service-select">
+                                <label for="service" id="service-id">Servicio:</label>
+                                <select name="service" id="service-select" disabled>
+                                    <option value="null" selected disabled id="selected-option">Seleccione un servicio</option>
+                                    <option value="1">Servicio 1</option>
+                                    <option value="2">Servicio 2</option>
+                                    <option value="3">Servicio 3</option>
+                                    <option value="4">Servicio 4</option>
+                                </select>
                             </section>
+
+
+
+                            <section id="calendar-hour-select">
+                                <label for="hour" id="hour-id">Horario:</label>
+                                <select name="hour" id="hour-select" disabled>
+                                    <option value="null" selected id="selected-option-1">Seleccione un horario</option>
+                                    <option value="1">Horario 1</option>
+                                    <option value="2">Horario 2</option>
+                                    <option value="3">Horario 3</option>
+                                    <option value="4">Horario 4</option>
+                                </select>
+                            </section>
+
+
+
+                            <section id="calendar-server-select"></section>
+                            <label for="server" id="server-id">Servidor:</label>
+                            <select name="server" id="server-select" disabled>
+                                <option value="null" selected disabled id="selected-option-2">Seleccione un servidor</option>
+                                <option value="1">Nombre 1</option>
+                                <option value="2">Nombre 2</option>
+                                <option value="3">Nombre 3</option>
+                                <option value="4">Nombre 4</option>
+                            </select>
                         </section>
                         
+                        <button type="submit" name="confirm" id="confirm" disabled>Confirmar</button>
                     </form>
                 </div>
                     <!----Right calendar container end---->

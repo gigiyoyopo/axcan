@@ -100,6 +100,10 @@ let index = systemMonth;
 let a = 0;
 let b = 0;
 
+
+let lastCell = "body";
+
+
 function load() {
 
     if(b == 0) {
@@ -110,6 +114,7 @@ function load() {
 
 
 function prev_month() {
+    lastCell = "body";
     index--;
     if(index <= systemMonth) {
         index = systemMonth;
@@ -123,6 +128,7 @@ function prev_month() {
 
 
 function next_month() {
+    lastCell = "body";
     index++;
     if(index == 12) {
         index = 11;
@@ -322,9 +328,15 @@ document.onclick = function checkDay(bool) {
     var stringArray = targetId.split("");
 
     if(a == 0 && stringArray[5] == "a") {
-
-        console.log(targetId);
-        displayDate(stringArray);
+            
+            if(lastCell != targetId) {
+                console.log(targetId);
+            displayDate(stringArray);
+            colorCell(targetId, lastCell);
+            lastCell = targetId;
+            }
+            
+        
     }
     
 }
@@ -337,25 +349,137 @@ function displayDate(stringArray) {
 
 
     if(stringArray[2] == "0") {
-        dateString = dateString + week[stringArray[0]] + " " + stringArray[3] + " de " + months[index] + " de 2026";
+        dateString = dateString + week[stringArray[0]] + " " + stringArray[3] + " de " + months[index] + " de " + systemDate.getFullYear();
     } else {
-        dateString = dateString + week[stringArray[0]] + " " + stringArray[2] + stringArray[3] + " de " + months[index] + " de 2026";
+        dateString = dateString + week[stringArray[0]] + " " + stringArray[2] + stringArray[3] + " de " + months[index] + " de " + systemDate.getFullYear();
     }
     
-    dateNumber = stringArray[2] + "" + stringArray[3] + "/" + (index + 1) + "/2026";
+    dateNumber = stringArray[2] + "" + stringArray[3] + "/" + (index + 1) + systemDate.getFullYear();
 
     dateStringElement.textContent = dateString;
     console.log(dateString);
+
+
+    
+
+    enable();
 
  
 }
 
 
 
-function enable() {
+function colorCell(targetId, lastCell) {
 
+    const lastCellR = document.getElementById(lastCell);
+    const selectedCell = document.getElementById(targetId);
+
+    console.log("colorCell: " + targetId);
+    selectedCell.style.backgroundColor = "grey";
+
+    console.log("lastCellR: " + lastCell);
+    lastCellR.style.backgroundColor = "white";
     
 }
+
+
+
+
+let hourSelect = document.getElementById("hour-select");
+
+let serviceSelect = document.getElementById("service-select");
+
+let serverSelect = document.getElementById("server-select");
+
+let accept = document.getElementById("confirm");
+
+function enable() {
+
+    a++;
+
+    const serviceSelection = document.getElementById("service-select");
+    const hourSelection = document.getElementById("hour-select");
+    const serverSelection = document.getElementById("server-select");
+
+    serviceSelection.setAttribute("disabled", "true");
+    hourSelection.setAttribute("disabled", "true");
+    serverSelection.setAttribute("disabled", "true");
+    accept.setAttribute("disabled", "true");
+
+    const selectedOption = document.getElementById("selected-option");
+    const selectedOption1 = document.getElementById("selected-option-1");
+    const selectedOption2 = document.getElementById("selected-option-2");
+    
+    selectedOption.remove();
+    selectedOption1.remove();
+    selectedOption2.remove();
+
+    //price.textContent = "Precio:";
+
+    const newSelectedOption = document.createElement("option");
+    const newSelectedOption1 = document.createElement("option");
+    const newSelectedOption2 = document.createElement("option");
+
+    const text = document.createTextNode("Selecciona un servicio");
+    const text1 = document.createTextNode("Selecciona un horario");
+    const text2 = document.createTextNode("Selecciona un servidor");
+
+    serviceSelection.appendChild(newSelectedOption);
+    hourSelection.appendChild(newSelectedOption1);
+    serverSelection.appendChild(newSelectedOption2);
+    
+    newSelectedOption.setAttribute("id", "selected-option");
+    newSelectedOption.setAttribute("value", "null");
+    newSelectedOption.setAttribute("selected", "true");
+    newSelectedOption.setAttribute("disabled", "true");
+
+    newSelectedOption1.setAttribute("id", "selected-option-1");
+    newSelectedOption1.setAttribute("value", "null");
+    newSelectedOption1.setAttribute("selected", "true");
+    newSelectedOption1.setAttribute("disabled", "true");
+
+    newSelectedOption2.setAttribute("id", "selected-option-2");
+    newSelectedOption2.setAttribute("value", "null");
+    newSelectedOption2.setAttribute("selected", "true");
+    newSelectedOption2.setAttribute("disabled", "true");
+    
+    
+    newSelectedOption.appendChild(text);
+    newSelectedOption1.appendChild(text1);
+    newSelectedOption2.appendChild(text2);
+
+    if(a != 0) {
+
+        serviceSelect.removeAttribute("disabled");
+        a = 0;
+    }
+}
+
+
+
+
+
+
+
+//defaultRadio.addEventListener("click", check());
+
+
+serviceSelect.addEventListener("change", () => {
+    console.log("paso 1");
+    hourSelect.removeAttribute("disabled");
+});
+
+hourSelect.addEventListener("change", () => {
+    console.log("paso 2");
+    serverSelect.removeAttribute("disabled");
+});
+
+serverSelect.addEventListener("change", () => {
+    console.log("paso 3");
+    accept.removeAttribute("disabled");
+});
+
+
 
 
 const dateDisplay = document.getElementById("current-date");
