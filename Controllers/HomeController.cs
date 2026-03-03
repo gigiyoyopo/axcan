@@ -11,6 +11,7 @@ using axcan.Data;
 using axcan.Models; 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Http;
+using System.Linq; // <-- ¡Faltaba esta! Es vital para usar .FirstOrDefaultAsync() y LINQ.
 
 namespace axcan.Controllers
 {
@@ -273,5 +274,13 @@ namespace axcan.Controllers
 
             if (empresa == null) return NotFound();
 
-            return View("Plantilla_" + empresa.id_plantilla, empresa);}
-    }}
+            return View("Plantilla_" + empresa.id_plantilla, empresa);
+        }
+    }
+
+    // <-- ¡Aquí va la clase!
+    public class GoogleToken
+    {
+        public string Credential { get; set; }
+    }
+}
