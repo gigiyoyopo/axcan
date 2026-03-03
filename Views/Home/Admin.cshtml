@@ -52,16 +52,20 @@
             <div class="text-white-50 small">MODO ADMINISTRADOR</div>
         </div>
         
-        <div class="nav flex-column mt-3">
-            <a href="#" class="nav-link active"><i class="bi bi-house-door me-2"></i> Dashboard</a>
-            <a href="#" class="nav-link"><i class="bi bi-calendar3 me-2"></i> Gestionar Citas</a>
-            <a href="#" class="nav-link"><i class="bi bi-people me-2"></i> Usuarios</a>
-            <a href="#" class="nav-link"><i class="bi bi-person-vcard me-2"></i> Personal</a>
-            <a href="#" class="nav-link"><i class="bi bi-scissors me-2"></i> Servicios</a>
-            <a href="#" class="nav-link"><i class="bi bi-file-earmark-code me-2"></i> Plantillas</a>
-            <hr class="text-secondary mx-3">
-            <a href="/" class="nav-link text-info"><i class="bi bi-arrow-left-circle me-2"></i> Volver a Web</a>
-        </div>
+ <div class="nav flex-column mt-3">
+    <a href="#stats" class="nav-link active"><i class="bi bi-graph-up-arrow me-2"></i> Dashboard</a>
+    
+    <a href="#calendario" class="nav-link"><i class="bi bi-calendar-month me-2"></i> Gestionar Citas</a>
+    
+    <a href="#servicios" class="nav-link"><i class="bi bi-layers me-2"></i> Servicios</a>
+    
+    <a href="#personal" class="nav-link"><i class="bi bi-people me-2"></i> Personal</a>
+    
+    <a href="#clientes" class="nav-link"><i class="bi bi-person-search me-2"></i> Usuarios</a>
+    
+    <hr class="text-secondary mx-3">
+    <a asp-action="Index" class="nav-link text-info"><i class="bi bi-arrow-left-circle me-2"></i> Volver a Web</a>
+</div>
     </nav>
 
     <main class="main-content" id="main-content">
@@ -75,16 +79,9 @@
                 <div class="theme-toggler" onclick="toggleTheme()">
                     <i id="theme-icon" class="bi bi-moon-stars-fill"></i>
                 </div>
-                <div class="dropdown">
-                    <button class="btn btn-outline-secondary dropdown-toggle rounded-pill" type="button" data-bs-toggle="dropdown">
-                        <i class="bi bi-person-circle"></i> Katto Jara
+            
                     </button>
-                    <ul class="dropdown-menu border-0 shadow">
-                        <li><a class="dropdown-item" href="#">Configuración</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item text-danger" href="#">Cerrar Sesión</a></li>
-                    </ul>
-                </div>
+            
             </div>
         </header>
 
@@ -96,15 +93,78 @@
                     <span class="text-success small fw-bold">+12% este mes</span>
                 </div>
             </div>
-            <div class="col-12 col-md-6 col-lg-3">
-                <div class="card card-custom p-4 bg-white text-dark">
-                    <div class="text-muted small fw-bold">PERSONAL</div>
-                    <h2 class="fw-bold">8</h2>
-                    <span class="text-primary small fw-bold">Todos activos</span>
-                </div>
+            <div class="card card-custom p-4 shadow-sm border-0">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h5 class="fw-bold mb-0">Gestión de Equipo</h5>
+        <button class="btn btn-dark btn-sm rounded-pill" data-bs-toggle="modal" data-bs-target="#modalAddEquipo">
+            + Vincular Usuario
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light small">
+                <tr>
+                    <th>Nombre / Usuario</th>
+                    <th>Subrol</th>
+                    <th>Acceso</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @* Aquí harías un @foreach (var p in Model.Personal) *@
+                <tr>
+                    <td><strong>Carlos Ruiz</strong><br><small class="text-muted">@@carlos_barbero</small></td>
+                    <td><span class="badge bg-info text-dark">Prestador</span></td>
+                    <td><small>Citas + Estadísticas personales</small></td>
+                    <td><button class="btn btn-sm btn-outline-danger">Eliminar</button></td>
+                </tr>
+                <tr>
+                    <td><strong>Sofía López</strong><br><small class="text-muted">@@sofi_agenda</small></td>
+                    <td><span class="badge bg-secondary">Secretario</span></td>
+                    <td><small>Agenda total + Clientes</small></td>
+                    <td><button class="btn btn-sm btn-outline-danger">Eliminar</button></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
             </div>
             <div class="col-12 col-md-6 col-lg-3">
-                <div class="card card-custom p-4 bg-dark text-white">
+               <div class="card card-custom p-4 shadow-sm border-0 rounded-4 mt-4">
+    <h5 class="fw-bold mb-3"><i class="bi bi-clock-history text-primary"></i> Horarios de Atención</h5>
+    <p class="small text-muted">Configura tus horas de apertura y cierre para que tus clientes sepan cuándo agendar.</p>
+    
+    <table class="table table-borderless align-middle">
+        <thead>
+            <tr class="small text-muted">
+                <th>Día</th>
+                <th>Apertura</th>
+                <th>Cierre</th>
+                <th>¿Descanso?</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                string[] dias = { "Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado" };
+                for (int i = 0; i < 7; i++)
+                {
+                    <tr>
+                        <td class="fw-bold">@dias[i]</td>
+                        <td><input type="time" name="apertura_@i" class="form-control form-control-sm" value="09:00"></td>
+                        <td><input type="time" name="cierre_@i" class="form-control form-control-sm" value="18:00"></td>
+                        <td>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="descanso_@i">
+                            </div>
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+    <button class="btn btn-primary w-100 fw-bold mt-2">Actualizar Horario Semanal</button>
+</div>
                     <div class="text-muted small fw-bold">SERVICIOS</div>
                     <h2 class="fw-bold">15</h2>
                     <span class="text-warning small fw-bold text-uppercase">Configurados</span>
@@ -158,7 +218,114 @@
                     </div>
                 </div>
             </div>
+            
+@model axcan.Models.Empresa
+@{ Layout = "_Layout"; }
 
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow-sm border-0 p-4 rounded-4">
+                <h5 class="fw-bold mb-3">Personalizar Card</h5>
+                <form asp-action="EditarNegocio" method="post" enctype="multipart/form-data">
+                    <input type="hidden" asp-for="id_empresa" />
+                    
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Nombre del Negocio</label>
+                        <input type="text" asp-for="nombre_empresa" class="form-control">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Mover Ubicación (GPS)</label>
+                        <div id="mapaAdmin" style="height: 200px; border-radius: 10px;" class="border"></div>
+                        <input type="hidden" id="lat" asp-for="ubicacion_lat">
+                        <input type="hidden" id="lng" asp-for="ubicacion_lng">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Logo Nuevo</label>
+                        <input type="file" name="logoArchivo" class="form-control form-control-sm">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 fw-bold">Guardar Cambios</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 p-4 rounded-4">
+                <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link active rounded-pill" data-bs-toggle="pill" data-bs-target="#mensual">Mensual</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link rounded-pill" data-bs-toggle="pill" data-bs-target="#semanal">Semanal</button>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+                    <div class="tab-pane fade show active" id="mensual">
+                        <div class="calendario-mensual-container">
+                            @* Aquí va la lógica de celdas que Axel hizo a mano *@
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h4 class="fw-bold mb-0">Marzo 2026</h4>
+                                <div><button class="btn btn-sm btn-light border"> < </button> <button class="btn btn-sm btn-light border"> > </button></div>
+                            </div>
+                            <table class="table table-bordered text-center">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th>Lun</th><th>Mar</th><th>Mié</th><th>Jue</th><th>Vie</th><th>Sáb</th><th>Dom</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @* Generación manual de días *@
+                                    <tr>
+                                        <td></td><td></td><td></td><td>1</td><td>2</td><td>3</td><td>4</td>
+                                    </tr>
+                                    @* ... resto de la cuadrícula de Axel ... *@
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="semanal">
+                        <div class="calendario-semanal-timeline">
+                            <div class="row g-0 border-top">
+                                <div class="col-2 border-end py-3 text-center bg-light fw-bold">Hora</div>
+                                <div class="col border-end py-3 text-center fw-bold">Lunes 02</div>
+                                <div class="col border-end py-3 text-center fw-bold">Martes 03</div>
+                                @* ... Columnas de Axel ... *@
+                            </div>
+                            <div class="row g-0 border-top">
+                                <div class="col-2 border-end py-2 text-center small text-muted">09:00 AM</div>
+                                <div class="col border-end bg-primary-subtle p-1"><small>Cita: Juan</small></div>
+                                <div class="col border-end"></div>
+                                @* ... Filas de tiempo de Axel ... *@
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        var lat = @Model.ubicacion_lat;
+        var lng = @Model.ubicacion_lng;
+        var map = L.map('mapaAdmin').setView([lat, lng], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        var marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+
+        marker.on('dragend', function (e) {
+            document.getElementById('lat').value = e.target.getLatLng().lat;
+            document.getElementById('lng').value = e.target.getLatLng().lng;
+        });
+    </script>
+}
             <div class="col-12 col-xl-4">
                 <div class="card card-custom p-4 h-100">
                     <h5 class="fw-bold mb-3">Gestión de Servicios</h5>

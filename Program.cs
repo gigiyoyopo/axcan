@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using axcan.Data;
 using Microsoft.AspNetCore.HttpOverrides;
 
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 var builder = WebApplication.CreateBuilder(args);
 
 // 1. SERVICIOS
@@ -10,7 +11,36 @@ builder.Services.AddControllersWithViews();
 // Nota: En Render, tu variable de entorno debe llamarse "ConnectionStrings__DefaultConnection" 
 // (con doble guion bajo) para que GetConnectionString la detecte automáticamente.
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(connectionString, npgsqlOptions => {
+        npgsqlOptions.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null);
+    }));
+
+// CONFIGURACIÓN DE SESIÓN (Movido arriba de builder.Build)
+builder.Services.AddSession(options => {
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
+
+// --- LA LÍNEA SAGRADA ---
+var app = builder.Build();
+
+// --- EL CHISMOSO (Logs de Render) ---
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<ApplicationDbContext>();
+        context.Database.OpenConnection();
+        Console.WriteLine("✅ ¡IGUANO EXITOSO! Conectado a Supabase correctamente.");
+        context.Database.CloseConnection();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("❌ ERROR DE CONEXIÓN: " + ex.Message);
+    }
+}
 
 // CONFIGURACIÓN DE GOOGLE - BLINDADA PARA RENDER
 builder.Services.AddAuthentication(options => {
