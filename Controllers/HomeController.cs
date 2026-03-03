@@ -136,7 +136,8 @@ namespace axcan.Controllers
                     e.logotipo_url = await GuardarArchivoPersonalizado(logoArchivo, "logos");
                 }
 
-                e.id_administrador = userId;
+           e.id_administrador = userId.GetValueOrDefault();
+           int idLimpio = userId ?? 0;
                 _context.empresas.Add(e);
 
                 var usuario = await _context.usuarios.FindAsync(userId);

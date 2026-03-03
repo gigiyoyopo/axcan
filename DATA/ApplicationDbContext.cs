@@ -12,10 +12,13 @@ namespace axcan.Data
 
         // Tus tablas
         public DbSet<Usuario> usuarios { get; set; }
-        public DbSet<Empresa> empresas { get; set; } // <--- Aquí usa Empresa
+        public DbSet<Empresa> empresas { get; set; }
         public DbSet<Secretario> secretarios { get; set; }
-
-        // SOLO UN MÉTODO OnModelCreating (ESTO ARREGLA EL ERROR CS0111)
+public DbSet<HorarioNegocio> horarios_negocio { get; set; }
+public DbSet<Servicio> servicios { get; set; }
+public DbSet<Secretario> secretarios { get; set; }
+public DbSet<Cita> citas { get; set; }
+       
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
