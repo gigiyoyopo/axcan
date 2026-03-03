@@ -8,8 +8,9 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // 2. FUNCIÓN PARA RECIBIR EL TOKEN DE GOOGLE
 async function handleGoogleResponse(response) {
-    console.log("Token recibido de Google. Autenticando en Supabase...");
+    console.log("Token recibido de Google. Autenticando...");
 
+    // A. Registrar en Supabase (como ya lo tenías)
     const { data, error } = await supabaseClient.auth.signInWithIdToken({
         provider: 'google',
         token: response.credential,
@@ -18,11 +19,33 @@ async function handleGoogleResponse(response) {
     if (error) {
         console.error("Error de Supabase:", error.message);
         alert("Error al vincular con Supabase: " + error.message);
-    } else {
-        console.log("¡Login en Supabase exitoso!", data);
-        
-        // Redirección temporal para validar visualmente el flujo
-        window.location.href = "/Home/Index";
+        return; // Detenemos el proceso si Supabase falla
+    } 
+    
+    console.log("¡Login en Supabase exitoso!", data);
+
+    // B. EL NUEVO PUENTE: Enviar el token a .NET para crear la Cookie
+    console.log("Avisando al servidor .NET...");
+    try {
+        const resBackend = await fetch('/Home/AutenticarConGoogle', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ credential: response.credential })
+        });
+
+        const resultadoNet = await resBackend.json();
+
+        if (resultadoNet.success) {
+            console.log("¡.NET generó la cookie exitosamente! Redirigiendo...");
+            // C. Ahora sí, cambiamos de página con permiso oficial
+            window.location.href = resultadoNet.redirectUrl; 
+        } else {
+            alert("Error de seguridad en .NET: " + resultadoNet.message);
+        }
+    } catch (err) {
+        console.error("Error conectando con C#:", err);
     }
 }
 
