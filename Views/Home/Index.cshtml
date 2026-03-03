@@ -1,130 +1,73 @@
 ﻿@model IEnumerable<axcan.Models.Empresa>
 @{
-    Layout = null;
+    ViewData["Title"] = "Gestión de Citas";
 }
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AXCAN - Gestión de Citas</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="~/css/estilo.css">
-    <link rel="stylesheet" href="~/css/carrousel.css">
-    <style>
-        .card-negocio { transition: transform 0.3s ease; border-radius: 15px !important; }
-        .card-negocio:hover { transform: translateY(-10px); shadow: 0 10px 20px rgba(0,0,0,0.1); }
-        .banner-card { height: 160px; object-fit: cover; }
-    </style>
-</head>
-<body class="bg-white">
 
-    <nav class="navbar navbar-expand-lg navbar-light bg-white sticky-top border-bottom">
-        <div class="container">
-            <a class="navbar-brand d-flex align-items-center" asp-controller="Home" asp-action="Index">
-                <img src="~/imagenesaxcan/logo_axcan.png" alt="Logo AXCAN" class="logo-navbar">
-            </a>
-            <div class="ms-auto d-flex align-items-center">
-                <a class="nav-link me-3" asp-controller="Home" asp-action="acercade">Acerca de Koi Labs</a>
-                <a asp-controller="Home" asp-action="registronegocio" class="btn btn-primary rounded-pill px-4 fw-bold">
-                    Registra tu negocio
-                </a>
-            </div>
-        </div>
-    </nav>
-
-    <header class="hero-section py-5 text-center">
-        <div class="container py-5">
-            <h1 class="display-4 fw-bold mb-3 hero-title">
-                Encuentra y agenda tu <span>próxima cita</span>
-            </h1>
-            <p class="lead text-muted mb-5">
-                La plataforma que conecta tus servicios locales favoritos con tu agenda, en tiempo real.
-            </p>
-            <div class="row justify-content-center">
-                <div class="col-md-8">
-                    <div class="input-group input-group-lg shadow-sm rounded-pill overflow-hidden border">
-                        <span class="input-group-text bg-white border-0 ps-4">🔍</span>
-                        <input type="text" class="form-control border-0" placeholder="¿Qué servicio buscas?">
-                        <button class="btn btn-primary px-5 fw-bold">Buscar</button>
-                    </div>
+<header class="hero-section py-5 text-center">
+    <div class="container py-5">
+        <h1 class="display-4 fw-bold mb-3 hero-title">
+            Encuentra y agenda tu <span>próxima cita</span>
+        </h1>
+        <p class="lead text-muted mb-5">
+            La plataforma que conecta tus servicios locales favoritos con tu agenda, en tiempo real.
+        </p>
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="input-group input-group-lg shadow-sm rounded-pill overflow-hidden border">
+                    <span class="input-group-text bg-white border-0 ps-4">🔍</span>
+                    <input type="text" class="form-control border-0" placeholder="¿Qué servicio buscas?">
+                    <button class="btn btn-primary px-5 fw-bold">Buscar</button>
                 </div>
             </div>
         </div>
-    </header>
-
-    <div id="carruselBanners" class="carousel slide carousel-fade container mb-5" data-bs-ride="carousel">
-        <div class="carousel-inner shadow-sm rounded-4">
-            <div class="carousel-item active"><img src="~/imagenesaxcan/prueba1.jpg" class="d-block w-100 banner-img"></div>
-            <div class="carousel-item"><img src="~/imagenesaxcan/prueba2.jpg" class="d-block w-100 banner-img"></div>
-            <div class="carousel-item"><img src="~/imagenesaxcan/prueba3.jpg" class="d-block w-100 banner-img"></div>
-        </div>
     </div>
+</header>
 
-    <section class="py-5 bg-light">
-        <div class="container">
-            <h3 class="fw-bold mb-4 text-center">Negocios destacados en tu zona</h3>
-            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
-                @if (Model != null && Model.Any())
+<div id="carruselBanners" class="carousel slide carousel-fade container mb-5" data-bs-ride="carousel">
+    <div class="carousel-inner shadow-sm rounded-4">
+        <div class="carousel-item active"><img src="~/imagenesaxcan/prueba1.jpg" class="d-block w-100 banner-img"></div>
+        <div class="carousel-item"><img src="~/imagenesaxcan/prueba2.jpg" class="d-block w-100 banner-img"></div>
+        <div class="carousel-item"><img src="~/imagenesaxcan/prueba3.jpg" class="d-block w-100 banner-img"></div>
+    </div>
+</div>
+
+<section class="py-5 bg-light">
+    <div class="container">
+        <h3 class="fw-bold mb-4 text-center">Negocios destacados en tu zona</h3>
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
+            @if (Model != null && Model.Any())
+            {
+                @foreach (var empresa in Model)
                 {
-                    @foreach (var empresa in Model)
-                    {
-                        <div class="col">
-                            <div class="card h-100 shadow-sm border-0 card-negocio">
-                                <img src="~/imagenesaxcan/prueba1.jpg" class="card-img-top banner-card rounded-top" alt="Negocio">
-                                <div class="card-body">
-                                    <span class="badge bg-primary mb-2">@empresa.rubro</span>
-                                    <h5 class="card-title fw-bold">@empresa.nombre_empresa</h5>
-                                    <p class="text-muted small"><i class="bi bi-geo-alt"></i> Aguascalientes, México</p>
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <button class="btn btn-outline-dark btn-sm rounded-pill">Agendar</button>
-                                        <span class="text-warning fw-bold small"><i class="bi bi-star-fill"></i> 4.8</span>
-                                    </div>
+                    <div class="col">
+                        <div class="card h-100 shadow-sm border-0 card-negocio">
+                            <img src="@(string.IsNullOrEmpty(empresa.logotipo_url) ? "/imagenesaxcan/prueba1.jpg" : empresa.logotipo_url)" class="card-img-top banner-card rounded-top" alt="Negocio">
+                            <div class="card-body">
+                                <span class="badge bg-primary mb-2">@empresa.rubro</span>
+                                <h5 class="card-title fw-bold">@empresa.nombre_empresa</h5>
+                                <p class="text-muted small"><i class="bi bi-geo-alt"></i> Ubicado en el Mapa</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <button class="btn btn-outline-dark btn-sm rounded-pill">Agendar</button>
+                                    <span class="text-warning fw-bold small"><i class="bi bi-star-fill"></i> 4.8</span>
                                 </div>
                             </div>
                         </div>
-                    }
-                }
-                else
-                {
-                    <div class="col-12 text-center py-5">
-                        <p class="text-muted">No hay negocios registrados todavía.</p>
                     </div>
                 }
-            </div>
+            }
+            else
+            {
+                <div class="col-12 text-center py-5">
+                    <p class="text-muted">No hay negocios registrados todavía.</p>
+                </div>
+            }
         </div>
-    </section>
+    </div>
+</section>
 
-    <section class="py-5">
-        <div class="container py-4">
-            <div class="row text-center g-4">
-                <div class="col-md-4">
-                    <div class="p-4 border rounded-3 h-100">
-                        <h4 class="fw-bold">Agenda Digital</h4>
-                        <p class="text-muted">Selecciona fecha, hora y servicio desde cualquier dispositivo.</p>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="p-4 border rounded-3 h-100">
-                        <h4 class="fw-bold">Tiempo Real</h4>
-                        <p class="text-muted">Consulta la disponibilidad actualizada al instante.</p>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="p-4 border rounded-3 h-100">
-                        <h4 class="fw-bold">Localización</h4>
-                        <p class="text-muted">Ubica los negocios cercanos con nuestros mapas.</p>
-                    </div>
-                </div>
-            </div>
+            }
         </div>
-    </section>
+    </div>
+</section>
 
-    <footer class="py-4 border-top text-center text-muted">
-        <small>© 2026 AXCAN · Todos los derechos reservados · Koi Labs</small>
-    </footer>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+@* ... Mantén la sección de los 3 iconos (Agenda, Tiempo Real, Localización) aquí abajo ... *@
