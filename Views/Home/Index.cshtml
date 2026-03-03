@@ -65,36 +65,6 @@
     </div>
 </section>
 
-
-<section class="py-5 bg-light">
-    <div class="container">
-        <h3 class="fw-bold mb-4 text-center">Negocios destacados en tu zona</h3>
-        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
-            @if (Model != null && Model.Any())
-            {
-                @foreach (var empresa in Model)
-                {
-                    <div class="col">
-                        <div class="card h-100 shadow-sm border-0 card-negocio">
-                            <img src="@(string.IsNullOrEmpty(empresa.logotipo_url) ? "/imagenesaxcan/prueba1.jpg" : empresa.logotipo_url)" class="card-img-top banner-card rounded-top" alt="Negocio">
-                            <div class="card-body">
-                                <span class="badge bg-primary mb-2">@empresa.rubro</span>
-                                <h5 class="card-title fw-bold">@empresa.nombre_empresa</h5>
-                                <p class="text-muted small"><i class="bi bi-geo-alt"></i> Ubicado en el Mapa</p>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <button class="btn btn-outline-dark btn-sm rounded-pill">Agendar</button>
-                                    <span class="text-warning fw-bold small"><i class="bi bi-star-fill"></i> 4.8</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                }
-            }
-            else
-            {
-                <div class="col-12 text-center py-5">
-                    <p class="text-muted">No hay negocios registrados todavía.</p>
-                </div>
             }
         </div>
     </div>

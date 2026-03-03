@@ -48,7 +48,7 @@
                                 <i class="bi bi-person-circle"></i> @Context.Session.GetString("UsuarioNombre")
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end shadow border-0">
-                                <li><a class="dropdown-item" asp-action="ConfiguracionCuenta">Configuración</a></li>
+                                <li><a class="dropdown-item" asp-action="ConfiguracionDeCuenta">Configuración</a></li>
                                 @if (Context.Session.GetString("UsuarioRol") == "administrador")
                                 {
                                     <li><a class="dropdown-item text-primary fw-bold" asp-action="Admin">Mi Dashboard</a></li>
