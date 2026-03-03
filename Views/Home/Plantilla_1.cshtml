@@ -1,0 +1,35 @@
+@model axcan.Models.Empresa
+@{ Layout = null; } <!DOCTYPE html>
+<html>
+<head>
+    <title>Reservar en @Model.nombre_empresa</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <style>
+        :root { --color-negocio: @Model.color_tema; }
+        .btn-reserva { background-color: var(--color-negocio); color: white; border-radius: 50px; }
+        .header-banner { 
+            background-image: url('@Model.banner_url'); 
+            height: 300px; background-size: cover; 
+        }
+    </style>
+</head>
+<body>
+    <div class="header-banner d-flex align-items-center justify-content-center">
+        <img src="@Model.logotipo_url" width="120" class="rounded-circle shadow">
+    </div>
+
+    <div class="container mt-5 text-center">
+        <h1 class="fw-bold">@Model.nombre_empresa</h1>
+        <p class="text-muted">@Model.rubro</p>
+
+        <hr>
+        
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <h3 class="mb-4">Selecciona tu cita</h3>
+                @Html.Partial("_CalendarioReserva", Model)
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,22 +1,23 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace axcan.Models
 {
+    [Table("usuarios", Schema = "public")]
     public class Usuario
     {
         [Key]
-        public int Id { get; set; }
+        public int id_usuario { get; set; }
+        public string username { get; set; } = string.Empty;
+        public string password { get; set; } = string.Empty;
+        public string correo { get; set; } = string.Empty;
+        public string nombre { get; set; } = string.Empty;
+        public string apellido_paterno { get; set; } = string.Empty;
+        public string apellido_materno { get; set; } = string.Empty;
         
-        [Required]
-        public string NombreCompleto { get; set; } = string.Empty;
-        
-        [Required]
-        public string Email { get; set; } = string.Empty;
-        
-        [Required]
-        public string UserName { get; set; } = string.Empty;
-        
-        [Required]
-        public string Password { get; set; } = string.Empty; // En el futuro le metemos Hash, por ahora así para que jale
+        // Ahora es string para coincidir con el TEXT de SQL
+        public string rol { get; set; } = "cliente"; 
+
+        public DateTime? fecha_registro { get; set; } = DateTime.Now;
     }
 }
