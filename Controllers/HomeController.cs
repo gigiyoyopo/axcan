@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+  using Microsoft.AspNetCore.Mvc;
 using axcan.Data; 
 using axcan.Models; 
 using Microsoft.EntityFrameworkCore;
@@ -28,7 +28,25 @@ namespace axcan.Controllers
         public IActionResult registronegocio() => View();
 
         [Route("admin")]
-        public IActionResult Admin() => View();
+        public async Task<IActionResult> Admin()
+        {
+            var userId = HttpContext.Session.GetInt32("UsuarioId");
+            if (userId == null) return RedirectToAction("login");
+
+            var empresa = await _context.empresas.FirstOrDefaultAsync(e => e.id_administrador == userId);
+            if (empresa == null) return RedirectToAction("registronegocio");
+
+            return View(empresa);
+        }
+
+        public async Task<IActionResult> ConfiguracionDeCuenta()
+        {
+            var userId = HttpContext.Session.GetInt32("UsuarioId");
+            if (userId == null) return RedirectToAction("login");
+
+            var usuario = await _context.usuarios.FindAsync(userId);
+            return View(usuario);
+        }
 
         // --- 2. LÓGICA DE USUARIOS ---
 
@@ -41,7 +59,7 @@ namespace axcan.Controllers
                     ViewBag.Error = "Ese nombre de usuario ya existe.";
                     return View("registro");
                 }
-                u.rol = "usuario"; 
+                u.rol = "usuario";
                 u.fecha_registro = DateTime.Now;
                 _context.usuarios.Add(u);
                 await _context.SaveChangesAsync();
@@ -53,193 +71,136 @@ namespace axcan.Controllers
                 return View("registro");
             }
         }
-[HttpPost]
-public async Task<IActionResult> ProcesarLogin(string username, string password)
-{
-    // Fix: Buscamos por username o correo para que siempre entre
-    var user = await _context.usuarios
-        .FirstOrDefaultAsync(u => (u.username == username || u.correo == username) && u.password == password);
 
-    if (user != null) {
-        HttpContext.Session.SetInt32("UsuarioId", user.id_usuario);
-        HttpContext.Session.SetString("UsuarioNombre", user.nombre);
-        HttpContext.Session.SetString("UsuarioRol", user.rol);
-        return RedirectToAction("Index");
-    }
-    
-    ViewBag.Error = "Usuario o contraseña incorrectos."; 
-    return View("login");
-}
-        // --- 3. LÓGICA DE NEGOCIO (EL ASCENSO) ---
-
-      [HttpPost]
-public async Task<IActionResult> GuardarEmpresa(Empresa e, IFormFile logoArchivo, string rubroElegido, string rubroOtro)
-{
-    try 
-    {
-        var userId = HttpContext.Session.GetInt32("UsuarioId");
-        if (userId == null) return RedirectToAction("login");
-
-        // --- LÓGICA DEL RUBRO (OTROS) ---
-        // Si eligió "Otros", usamos lo que escribió en el cuadro de texto
-        e.rubro = (rubroElegido == "Otros") ? rubroOtro : rubroElegido;
-
-        // --- LÓGICA DEL LOGO (PUNTO 4) ---
-        if (logoArchivo != null && logoArchivo.Length > 0)
+        [HttpPost]
+        public async Task<IActionResult> ProcesarLogin(string username, string password)
         {
-            string nombreArchivo = Guid.NewGuid().ToString() + Path.GetExtension(logoArchivo.FileName);
-            string rutaCarpeta = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/logos");
+            var user = await _context.usuarios
+                .FirstOrDefaultAsync(u => (u.username == username || u.correo == username) && u.password == password);
+
+            if (user != null) {
+                HttpContext.Session.SetInt32("UsuarioId", user.id_usuario);
+                HttpContext.Session.SetString("UsuarioNombre", user.nombre);
+                HttpContext.Session.SetString("UsuarioRol", user.rol);
+                return RedirectToAction("Index");
+            }
             
-            // Si la carpeta no existe (como en un server nuevo), la creamos
+            ViewBag.Error = "Usuario o contraseña incorrectos."; 
+            return View("login");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ActualizarPerfil(Usuario u)
+        {
+            var userId = HttpContext.Session.GetInt32("UsuarioId");
+            if (userId == null) return RedirectToAction("login");
+
+            try {
+                var usuarioDb = await _context.usuarios.FindAsync(userId);
+                if (usuarioDb != null) {
+                    usuarioDb.nombre = u.nombre;
+                    usuarioDb.apellido_paterno = u.apellido_paterno;
+                    usuarioDb.apellido_materno = u.apellido_materno;
+                    usuarioDb.username = u.username;
+                    usuarioDb.correo = u.correo;
+
+                    if (!string.IsNullOrEmpty(u.password)) {
+                        usuarioDb.password = u.password;
+                    }
+
+                    _context.usuarios.Update(usuarioDb);
+                    await _context.SaveChangesAsync();
+                    
+                    HttpContext.Session.SetString("UsuarioNombre", u.nombre);
+                    TempData["Mensaje"] = "Perfil actualizado con éxito.";
+                }
+            }
+            catch (Exception ex) {
+                TempData["Error"] = "Error: " + ex.Message;
+            }
+            return RedirectToAction("ConfiguracionDeCuenta");
+        }
+
+        // --- 3. LÓGICA DE NEGOCIO ---
+
+        [HttpPost]
+        public async Task<IActionResult> GuardarEmpresa(Empresa e, IFormFile logoArchivo, string rubroElegido, string rubroOtro)
+        {
+            try {
+                var userId = HttpContext.Session.GetInt32("UsuarioId");
+                if (userId == null) return RedirectToAction("login");
+
+                e.rubro = (rubroElegido == "Otros") ? rubroOtro : rubroElegido;
+
+                if (logoArchivo != null && logoArchivo.Length > 0) {
+                    e.logotipo_url = await GuardarArchivo(logoArchivo, "logos");
+                }
+
+                e.id_administrador = userId;
+                _context.empresas.Add(e);
+
+                var usuario = await _context.usuarios.FindAsync(userId);
+                if (usuario != null) {
+                    usuario.rol = "administrador";
+                    _context.usuarios.Update(usuario);
+                    HttpContext.Session.SetString("UsuarioRol", "administrador");
+                }
+
+                await _context.SaveChangesAsync();
+                return RedirectToAction("Admin");
+            }
+            catch (Exception ex) {
+                ViewBag.Error = "Error al registrar: " + ex.Message;
+                return View("registronegocio");
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> EditarNegocio(Empresa e, IFormFile logoArchivo, string rubroElegido, string rubroOtro)
+        {
+            try {
+                var empresaDb = await _context.empresas.FindAsync(e.id_empresa);
+                if (empresaDb == null) return NotFound();
+
+                empresaDb.nombre_empresa = e.nombre_empresa;
+                empresaDb.rubro = (rubroElegido == "Otros") ? rubroOtro : rubroElegido;
+                empresaDb.ubicacion_lat = e.ubicacion_lat;
+                empresaDb.ubicacion_lng = e.ubicacion_lng;
+
+                if (logoArchivo != null && logoArchivo.Length > 0) {
+                    empresaDb.logotipo_url = await GuardarArchivo(logoArchivo, "logos");
+                }
+
+                _context.empresas.Update(empresaDb);
+                await _context.SaveChangesAsync();
+                
+                TempData["Mensaje"] = "¡Negocio actualizado con éxito!";
+                return RedirectToAction("Admin");
+            }
+            catch (Exception ex) {
+                ViewBag.Error = "Error al actualizar: " + ex.Message;
+                return RedirectToAction("Admin");
+            }
+        }
+
+        public IActionResult Logout()
+        {
+            HttpContext.Session.Clear();
+            return RedirectToAction("login");
+        }
+
+        private async Task<string> GuardarArchivo(IFormFile archivo, string carpeta)
+        {
+            string nombre = Guid.NewGuid().ToString() + Path.GetExtension(archivo.FileName);
+            string rutaCarpeta = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", carpeta);
+            
             if (!Directory.Exists(rutaCarpeta)) Directory.CreateDirectory(rutaCarpeta);
 
-            string rutaCompleta = Path.Combine(rutaCarpeta, nombreArchivo);
-
-            using (var stream = new FileStream(rutaCompleta, FileMode.Create))
-            {
-                await logoArchivo.CopyToAsync(stream);
+            string rutaCompleta = Path.Combine(rutaCarpeta, nombre);
+            using (var stream = new FileStream(rutaCompleta, FileMode.Create)) {
+                await archivo.CopyToAsync(stream);
             }
-
-            e.logotipo_url = "/logos/" + nombreArchivo;
+            return $"/{carpeta}/{nombre}";
         }
-
-        // --- GUARDADO EN DB ---
-        e.id_administrador = userId;
-        _context.empresas.Add(e);
-
-        // ASCENSO DE RANGO
-        var usuario = await _context.usuarios.FindAsync(userId);
-        if (usuario != null) {
-            usuario.rol = "administrador";
-            _context.usuarios.Update(usuario);
-            HttpContext.Session.SetString("UsuarioRol", "administrador");
-        }
-
-        await _context.SaveChangesAsync();
-        return RedirectToAction("Admin");
-    }
-    catch (Exception ex)
-    {
-        ViewBag.Error = "Error al registrar: " + ex.Message;
-        return View("registronegocio");
-    }
-
-}
-// --- ACTUALIZAR PERFIL DE USUARIO ---
-// --- 1. CONFIGURACIÓN DE CUENTA (FUNCIONAL) ---
-[HttpPost]
-public async Task<IActionResult> ActualizarPerfil(Usuario u)
-{
-    var userId = HttpContext.Session.GetInt32("UsuarioId");
-    if (userId == null) return RedirectToAction("login");
-
-    var usuarioDb = await _context.usuarios.FindAsync(userId);
-    if (usuarioDb != null)
-    {
-        usuarioDb.nombre = u.nombre;
-        usuarioDb.apellido_paterno = u.apellido_paterno;
-        usuarioDb.apellido_materno = u.apellido_materno;
-        usuarioDb.correo = u.correo;
-        usuarioDb.username = u.username;
-
-        if (!string.IsNullOrEmpty(u.password)) usuarioDb.password = u.password;
-
-        _context.usuarios.Update(usuarioDb);
-        await _context.SaveChangesAsync();
-        
-        HttpContext.Session.SetString("UsuarioNombre", u.nombre);
-        TempData["Mensaje"] = "¡Perfil actualizado!";
-    }
-    return RedirectToAction("ConfiguracionCuenta");
-}
-
-// --- 2. CRM: EDITAR CARD Y GPS ---
-[HttpPost]
-public async Task<IActionResult> EditarNegocio(Empresa e, IFormFile logoArchivo, string rubroElegido, string rubroOtro)
-{
-    try 
-    {
-        var empresaDb = await _context.empresas.FindAsync(e.id_empresa);
-        if (empresaDb == null) return NotFound();
-
-        // 1. Lógica de Rubro (Si es "Otros", usa el texto escrito)
-        empresaDb.rubro = (rubroElegido == "Otros") ? rubroOtro : rubroElegido;
-        
-        // 2. Datos básicos
-        empresaDb.nombre_empresa = e.nombre_empresa;
-        empresaDb.ubicacion_lat = e.ubicacion_lat;
-        empresaDb.ubicacion_lng = e.ubicacion_lng;
-
-        // 3. Manejo de Logo
-        if (logoArchivo != null && logoArchivo.Length > 0)
-        {
-            string nombreArchivo = Guid.NewGuid().ToString() + Path.GetExtension(logoArchivo.FileName);
-            string rutaCarpeta = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/logos");
-            
-            if (!Directory.Exists(rutaCarpeta)) Directory.CreateDirectory(rutaCarpeta);
-
-            string rutaCompleta = Path.Combine(rutaCarpeta, nombreArchivo);
-            using (var stream = new FileStream(rutaCompleta, FileMode.Create))
-            {
-                await logoArchivo.CopyToAsync(stream);
-            }
-            empresaDb.logotipo_url = "/logos/" + nombreArchivo;
-        }
-
-        _context.empresas.Update(empresaDb);
-        await _context.SaveChangesAsync();
-        
-        TempData["Mensaje"] = "¡Negocio actualizado con éxito!";
-        return RedirectToAction("Admin");
-    }
-    catch (Exception ex)
-    {
-        ViewBag.Error = "Error al actualizar: " + ex.Message;
-        return RedirectToAction("Admin");
     }
 }
-// --- GUARDAR PERSONALIZACIÓN Y CRM ---
-[HttpPost]
-public async Task<IActionResult> GuardarConfiguracionNegocio(Empresa e, IFormFile nuevoLogo, IFormFile nuevoBanner)
-{
-    var empresaDb = await _context.empresas.FindAsync(e.id_empresa);
-    if (empresaDb == null) return NotFound();
-
-    // CRM: Datos básicos y GPS
-    empresaDb.nombre_empresa = e.nombre_empresa;
-    empresaDb.rubro = e.rubro;
-    empresaDb.ubicacion_lat = e.ubicacion_lat;
-    empresaDb.ubicacion_lng = e.ubicacion_lng;
-
-    // Personalización de Axel
-    empresaDb.color_tema = e.color_tema;
-
-    // Procesar Logo
-    if (nuevoLogo != null) {
-        empresaDb.logotipo_url = await GuardarArchivo(nuevoLogo, "logos");
-    }
-    // Procesar Banner
-    if (nuevoBanner != null) {
-        empresaDb.banner_url = await GuardarArchivo(nuevoBanner, "banners");
-    }
-
-    _context.empresas.Update(empresaDb);
-    await _context.SaveChangesAsync();
-    return RedirectToAction("Admin");
-}
-
-// Método auxiliar para no repetir código de guardado
-private async Task<string> GuardarArchivo(IFormFile archivo, string carpeta)
-{
-    string nombre = Guid.NewGuid().ToString() + Path.GetExtension(archivo.FileName);
-    string ruta = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", carpeta, nombre);
-    
-    string dir = Path.GetDirectoryName(ruta);
-    if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
-
-    using (var stream = new FileStream(ruta, FileMode.Create)) {
-        await archivo.CopyToAsync(stream);
-    }
-    return $"/{carpeta}/{nombre}";
-}
-}}
