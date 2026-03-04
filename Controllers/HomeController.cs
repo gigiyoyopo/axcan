@@ -15,63 +15,86 @@ namespace axcan.Controllers
             _context = context;
         }
 
-        // --- 1. VISTAS PÚBLICAS ---
+        // =======================================================
+        // FASE 4: VISTAS PÚBLICAS Y ENRUTAMIENTO DINÁMICO (URLs)
+        // =======================================================
+        
         public async Task<IActionResult> Index() 
         {
             var empresas = await _context.empresas.ToListAsync();
             return View(empresas);
         }
 
+        // ¡LA MAGIA DE LAS PÁGINAS INDEPENDIENTES! (axcan.com/reservar/barberia-paco)
+        [Route("reservar/{nombreUrl}")]
+        public async Task<IActionResult> PaginaCliente(string nombreUrl)
+        {
+            var empresa = await _context.empresas
+                .FirstOrDefaultAsync(e => e.nombre_empresa.Replace(" ", "-").ToLower() == nombreUrl.ToLower());
+
+            if (empresa == null) return NotFound("Página no encontrada.");
+            
+            // Aquí le mandamos los datos al molde de Axel
+            return View("PlantillaReserva", empresa); 
+        }
+
         public IActionResult login() => View();
         public IActionResult registro() => View();
-        public IActionResult acercade() => View();
         public IActionResult registronegocio() => View();
 
+        // =======================================================
+        // FASE 2: LÓGICA DE ROLES (Admin vs Secretario)
+        // =======================================================
+        
         [Route("admin")]
-        public async Task<IActionResult> Admin()
-        {
-            var userId = HttpContext.Session.GetInt32("UsuarioId");
-            if (userId == null) return RedirectToAction("login");
+public async Task<IActionResult> Admin()
+{
+    var userId = HttpContext.Session.GetInt32("UsuarioId");
+    if (userId == null) return RedirectToAction("login");
 
-            var empresa = await _context.empresas.FirstOrDefaultAsync(e => e.id_administrador == userId);
-            if (empresa == null) return RedirectToAction("registronegocio");
+    // 1. SI ES EL DUEÑO (ADMINISTRADOR)
+    var empresa = await _context.empresas.FirstOrDefaultAsync(e => e.id_administrador == userId);
+    
+    if (empresa != null) {
+        ViewBag.RolLocal = "administrador";
+        
+        // --- MAGIA: Traemos los Servicios Reales ---
+        ViewBag.Servicios = await _context.servicios
+            .Where(s => s.id_empresa == empresa.id_empresa).ToListAsync();
 
-            return View(empresa);
-        }
+        // --- MAGIA: Traemos el Personal Real (Join con Usuarios) ---
+        var personal = await (from s in _context.secretarios
+                              join u in _context.usuarios on s.id_usuario equals u.id_usuario
+                              where s.id_empresa == empresa.id_empresa
+                              select new { 
+                                  u.nombre, 
+                                  u.username, 
+                                  s.subrol,
+                                  s.id_secretario
+                              }).ToListAsync();
+        ViewBag.Personal = personal;
 
-        public async Task<IActionResult> ConfiguracionDeCuenta()
-        {
-            var userId = HttpContext.Session.GetInt32("UsuarioId");
-            if (userId == null) return RedirectToAction("login");
+        return View(empresa);
+    }
 
-            var usuario = await _context.usuarios.FindAsync(userId);
-            return View(usuario);
-        }
+    // 2. SI ES EL EMPLEADO (SECRETARIO / PRESTADOR)
+    var empleado = await _context.secretarios.FirstOrDefaultAsync(s => s.id_usuario == userId);
+    if (empleado != null) {
+        var empresaEmpleado = await _context.empresas.FindAsync(empleado.id_empresa);
+        ViewBag.RolLocal = empleado.subrol;
+        
+        // --- MAGIA: Traemos las Citas Reales del negocio ---
+        ViewBag.Citas = await _context.citas
+            .Where(c => c.id_empresa == empleado.id_empresa)
+            .ToListAsync();
 
-        // --- 2. LÓGICA DE USUARIOS ---
+        return View(empresaEmpleado);
+    }
 
-        [HttpPost]
-        public async Task<IActionResult> ProcesarRegistro(Usuario u)
-        {
-            try {
-                var existe = await _context.usuarios.AnyAsync(x => x.username == u.username);
-                if (existe) {
-                    ViewBag.Error = "Ese nombre de usuario ya existe.";
-                    return View("registro");
-                }
-                u.rol = "usuario";
-                u.fecha_registro = DateTime.Now;
-                _context.usuarios.Add(u);
-                await _context.SaveChangesAsync();
-                TempData["Mensaje"] = "¡Cuenta creada! Ya puedes iniciar sesión.";
-                return RedirectToAction("login");
-            }
-            catch (Exception ex) {
-                ViewBag.Error = "Error al registrar: " + ex.Message;
-                return View("registro");
-            }
-        }
+    return RedirectToAction("registronegocio");
+}
 
+        // Lógica de Login (Igual que antes)
         [HttpPost]
         public async Task<IActionResult> ProcesarLogin(string username, string password)
         {
@@ -84,158 +107,99 @@ namespace axcan.Controllers
                 HttpContext.Session.SetString("UsuarioRol", user.rol);
                 return RedirectToAction("Index");
             }
-            
             ViewBag.Error = "Usuario o contraseña incorrectos."; 
             return View("login");
         }
 
+        // =======================================================
+        // FASE 1: GESTIÓN DE NEGOCIO (Servicios, Personal y Horarios)
+        // =======================================================
+
         [HttpPost]
-        public async Task<IActionResult> ActualizarPerfil(Usuario u)
+        public async Task<IActionResult> EditarNegocio(Empresa e, IFormFile logoArchivo, IFormFile bannerArchivo)
         {
-            var userId = HttpContext.Session.GetInt32("UsuarioId");
-            if (userId == null) return RedirectToAction("login");
+            var empresaDb = await _context.empresas.FindAsync(e.id_empresa);
+            if (empresaDb == null) return NotFound();
 
-            try {
-                var usuarioDb = await _context.usuarios.FindAsync(userId);
-                if (usuarioDb != null) {
-                    usuarioDb.nombre = u.nombre;
-                    usuarioDb.apellido_paterno = u.apellido_paterno;
-                    usuarioDb.apellido_materno = u.apellido_materno;
-                    usuarioDb.username = u.username;
-                    usuarioDb.correo = u.correo;
+            empresaDb.nombre_empresa = e.nombre_empresa;
+            empresaDb.color_tema = e.color_tema;
+            empresaDb.id_plantilla = e.id_plantilla;
 
-                    if (!string.IsNullOrEmpty(u.password)) {
-                        usuarioDb.password = u.password;
-                    }
+            if (logoArchivo != null) empresaDb.logotipo_url = await GuardarFile(logoArchivo, "logos");
+            if (bannerArchivo != null) empresaDb.banner_url = await GuardarFile(bannerArchivo, "banners");
 
-                    _context.usuarios.Update(usuarioDb);
-                    await _context.SaveChangesAsync();
-                    
-                    HttpContext.Session.SetString("UsuarioNombre", u.nombre);
-                    TempData["Mensaje"] = "Perfil actualizado con éxito.";
-                }
-            }
-            catch (Exception ex) {
-                TempData["Error"] = "Error: " + ex.Message;
-            }
-            return RedirectToAction("ConfiguracionDeCuenta");
+            _context.empresas.Update(empresaDb);
+            await _context.SaveChangesAsync();
+            return RedirectToAction("Admin");
         }
 
-        // --- 3. LÓGICA DE NEGOCIO (CRM Y PLANTILLAS) ---
+        [HttpPost]
+        public async Task<IActionResult> GuardarServicio(Servicio s)
+        {
+            _context.servicios.Add(s);
+            await _context.SaveChangesAsync();
+            return RedirectToAction("Admin");
+        }
 
         [HttpPost]
-        public async Task<IActionResult> GuardarEmpresa(Empresa e, IFormFile logoArchivo, string rubroElegido, string rubroOtro)
+        public async Task<IActionResult> AgregarPersonal(string usernameBusqueda, string subrol, int idEmpresa)
         {
-            try {
-                var userId = HttpContext.Session.GetInt32("UsuarioId");
-                if (userId == null) return RedirectToAction("login");
-
-                e.rubro = (rubroElegido == "Otros") ? rubroOtro : rubroElegido;
-
-                if (logoArchivo != null && logoArchivo.Length > 0) {
-                    e.logotipo_url = await GuardarArchivoPersonalizado(logoArchivo, "logos");
-                }
-
-           e.id_administrador = userId.GetValueOrDefault();
-           int idLimpio = userId ?? 0;
-                _context.empresas.Add(e);
-
-                var usuario = await _context.usuarios.FindAsync(userId);
-                if (usuario != null) {
-                    usuario.rol = "administrador";
-                    _context.usuarios.Update(usuario);
-                    HttpContext.Session.SetString("UsuarioRol", "administrador");
-                }
-
+            var usuario = await _context.usuarios.FirstOrDefaultAsync(u => u.username == usernameBusqueda);
+            if (usuario != null) {
+                var nuevoStaff = new Secretario {
+                    id_usuario = usuario.id_usuario,
+                    id_empresa = idEmpresa,
+                    subrol = subrol
+                };
+                _context.secretarios.Add(nuevoStaff);
                 await _context.SaveChangesAsync();
-                return RedirectToAction("Admin");
             }
-            catch (Exception ex) {
-                ViewBag.Error = "Error al registrar: " + ex.Message;
-                return View("registron  egocio");
-            }
+            return RedirectToAction("Admin");
         }
+
+        // =======================================================
+        // FASE 3: EL MOTOR DEL CALENDARIO DE AXEL
+        // =======================================================
 
         [HttpPost]
-        public async Task<IActionResult> EditarNegocio(Empresa e, IFormFile logoArchivo, IFormFile nuevoBanner, string rubroElegido, string rubroOtro)
+        public async Task<IActionResult> AgendarCita(Cita nuevaCita)
         {
-            try {
-                var empresaDb = await _context.empresas.FindAsync(e.id_empresa);
-                if (empresaDb == null) return NotFound();
-
-                empresaDb.nombre_empresa = e.nombre_empresa;
-                empresaDb.rubro = (rubroElegido == "Otros") ? rubroOtro : rubroElegido;
-                empresaDb.ubicacion_lat = e.ubicacion_lat;
-                empresaDb.ubicacion_lng = e.ubicacion_lng;
-
-                if (logoArchivo != null && logoArchivo.Length > 0) {
-                    empresaDb.logotipo_url = await GuardarArchivoPersonalizado(logoArchivo, "logos");
-                }
-
-                _context.empresas.Update(empresaDb);
-                await _context.SaveChangesAsync();
-                
-                TempData["Mensaje"] = "¡Negocio actualizado con éxito!";
-                return RedirectToAction("Admin");
-            }
-            catch (Exception ex) {
-                ViewBag.Error = "Error al actualizar: " + ex.Message;
-                return RedirectToAction("Admin");
-            }
+            nuevaCita.estatus = "pendiente";
+            _context.citas.Add(nuevaCita);
+            await _context.SaveChangesAsync();
+            
+            // Retorna a la página de éxito o recarga la plantilla
+            return RedirectToAction("Index"); 
         }
 
-        public IActionResult Logout()
+        [HttpGet]
+        public async Task<JsonResult> GetDatosCalendario(int idEmpresa)
         {
+            // Este endpoint es para que el JS de Axel cargue los selects dinámicamente
+            var servicios = await _context.servicios.Where(s => s.id_empresa == idEmpresa && s.activo).ToListAsync();
+            var personal = await _context.secretarios.Where(s => s.id_empresa == idEmpresa && s.subrol == "prestador").ToListAsync();
+            
+            return Json(new { servicios = servicios, prestadores = personal });
+        }
+
+        // =======================================================
+        // MÉTODOS AUXILIARES
+        // =======================================================
+
+        public IActionResult Logout() {
             HttpContext.Session.Clear();
             return RedirectToAction("login");
         }
 
-        // Método auxiliar para guardar recursos de Axel
-        private async Task<string> GuardarArchivoPersonalizado(IFormFile archivo, string carpeta)
+        private async Task<string> GuardarFile(IFormFile file, string folder)
         {
-            string nombre = Guid.NewGuid().ToString() + Path.GetExtension(archivo.FileName);
-            string rutaCarpeta = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", carpeta);
-            
-            if (!Directory.Exists(rutaCarpeta)) Directory.CreateDirectory(rutaCarpeta);
-
-            string rutaCompleta = Path.Combine(rutaCarpeta, nombre);
-            using (var stream = new FileStream(rutaCompleta, FileMode.Create)) {
-                await archivo.CopyToAsync(stream);
+            string name = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
+            string path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", folder);
+            if (!Directory.Exists(path)) Directory.CreateDirectory(path);
+            using (var stream = new FileStream(Path.Combine(path, name), FileMode.Create)) {
+                await file.CopyToAsync(stream);
             }
-            return $"/{carpeta}/{nombre}";
+            return $"/{folder}/{name}";
         }
-    
-    [Route("reservar/{nombreUrl}")]
-public async Task<IActionResult> PaginaReserva(string nombreUrl)
-{
-    // Buscamos el negocio por su nombre o ID
-    var empresa = await _context.empresas
-        .FirstOrDefaultAsync(e => e.nombre_empresa.Replace(" ", "-").ToLower() == nombreUrl.ToLower());
-
-    if (empresa == null) return NotFound();
-
-    // Pasamos los datos de personalización (color, logo, banner, plantilla) a la vista
- 
-    return View("Plantilla_" + empresa.id_plantilla, empresa); 
-}
-//--ver hoariors disponibles 
-[HttpGet]
-public async Task<JsonResult> GetHorariosDisponibles(int idEmpresa, int diaSeleccionado)
-{
-    // Buscamos el horario configurado para ese día de la semana
-    var horario = await _context.horarios_negocio
-        .FirstOrDefaultAsync(h => h.id_empresa == idEmpresa && h.dia_semana == diaSeleccionado);
-
-    if (horario == null || horario.es_dia_descanso)
-    {
-        return Json(new { disponible = false });
     }
-
-    return Json(new { 
-        disponible = true, 
-        apertura = horario.hora_apertura.ToString(@"hh\:mm"), 
-        cierre = horario.hora_cierre.ToString(@"hh\:mm") 
-    });
-}
-}
 }

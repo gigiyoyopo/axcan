@@ -1,4 +1,8 @@
-@{ Layout = null; }
+@model axcan.Models.Empresa
+@{
+    Layout = null;
+    string rolActual = ViewBag.RolLocal as string ?? "administrador";
+}
 <!DOCTYPE html>
 <html lang="es" data-bs-theme="light">
 <head>
@@ -8,6 +12,7 @@
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
     <style>
         :root { --sidebar-width: 260px; --gold-axcan: #D4AF37; }
@@ -15,21 +20,13 @@
         
         /* Sidebar Design */
         .sidebar { 
-            width: var(--sidebar-width); 
-            height: 100vh; 
-            position: fixed; 
-            top: 0; left: 0; 
-            z-index: 1000;
-            background: #111;
-            transition: all 0.3s;
+            width: var(--sidebar-width); height: 100vh; position: fixed; 
+            top: 0; left: 0; z-index: 1000; background: #111; transition: all 0.3s;
         }
-        
         .main-content { margin-left: var(--sidebar-width); padding: 25px; transition: all 0.3s; }
-        
         .nav-link { color: #aaa; margin: 8px 15px; border-radius: 10px; padding: 12px; }
         .nav-link:hover, .nav-link.active { background: var(--gold-axcan); color: #000 !important; font-weight: bold; }
 
-        /* Mobile Adjustments */
         @@media (max-width: 992px) {
             .sidebar { left: -100%; }
             .sidebar.active { left: 0; }
@@ -39,9 +36,13 @@
         .card-custom { border: none; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); transition: 0.3s; }
         .card-custom:hover { transform: translateY(-5px); }
         .logo-admin { max-width: 130px; filter: brightness(0) invert(1); }
-        
-        /* Dark/Light Switch */
         .theme-toggler { cursor: pointer; font-size: 1.5rem; color: var(--gold-axcan); }
+
+        /* Estilos Calendario del Secretario */
+        .columna-dia { background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); min-height: 400px; padding: 12px;}
+        .cabecera-dia { text-align: center; padding-bottom: 12px; border-bottom: 1px solid #edf2f7; margin-bottom: 12px; font-weight: 700;}
+        .dia-actual { color: var(--gold-axcan); }
+        .cita-block { background-color: #f8fafc; border-left: 4px solid var(--gold-axcan); border-radius: 6px; padding: 10px; margin-bottom: 10px; font-size: 0.85rem; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
     </style>
 </head>
 <body>
@@ -49,328 +50,256 @@
     <nav class="sidebar shadow" id="sidebar">
         <div class="p-4 text-center">
             <img src="/imagenesaxcan/logo_axcan.png" alt="AXCAN" class="logo-admin mb-3">
-            <div class="text-white-50 small">MODO ADMINISTRADOR</div>
+            <div class="text-white-50 small fw-bold">MODO @rolActual.ToUpper()</div>
         </div>
         
- <div class="nav flex-column mt-3">
-    <a href="#stats" class="nav-link active"><i class="bi bi-graph-up-arrow me-2"></i> Dashboard</a>
-    
-    <a href="#calendario" class="nav-link"><i class="bi bi-calendar-month me-2"></i> Gestionar Citas</a>
-    
-    <a href="#servicios" class="nav-link"><i class="bi bi-layers me-2"></i> Servicios</a>
-    
-    <a href="#personal" class="nav-link"><i class="bi bi-people me-2"></i> Personal</a>
-    
-    <a href="#clientes" class="nav-link"><i class="bi bi-person-search me-2"></i> Usuarios</a>
-    
-    <hr class="text-secondary mx-3">
-    <a asp-action="Index" class="nav-link text-info"><i class="bi bi-arrow-left-circle me-2"></i> Volver a Web</a>
-</div>
+        <div class="nav flex-column mt-3">
+            @if(rolActual == "administrador") {
+                <a href="#stats" class="nav-link active"><i class="bi bi-graph-up-arrow me-2"></i> Dashboard</a>
+                <a href="#personal" class="nav-link"><i class="bi bi-people me-2"></i> Personal</a>
+                <a href="#configuracion" class="nav-link"><i class="bi bi-gear me-2"></i> Configuración</a>
+            } else {
+                <a href="#calendario-secretario" class="nav-link active"><i class="bi bi-calendar-month me-2"></i> Gestión de Citas</a>
+            }
+            <hr class="text-secondary mx-3">
+            <a asp-action="Index" class="nav-link text-info"><i class="bi bi-arrow-left-circle me-2"></i> Volver a Web</a>
+            <a asp-action="Logout" class="nav-link text-danger"><i class="bi bi-box-arrow-left me-2"></i> Cerrar Sesión</a>
+        </div>
     </nav>
 
     <main class="main-content" id="main-content">
-        
         <header class="d-flex justify-content-between align-items-center mb-4">
             <div class="d-flex align-items-center">
                 <button class="btn btn-dark d-lg-none me-3" onclick="toggleMenu()"><i class="bi bi-list"></i></button>
                 <h3 class="fw-bold mb-0">Panel Axcan</h3>
             </div>
-            <div class="d-flex align-items-center gap-3">
-                <div class="theme-toggler" onclick="toggleTheme()">
-                    <i id="theme-icon" class="bi bi-moon-stars-fill"></i>
-                </div>
-            
-                    </button>
-            
+            <div class="theme-toggler" onclick="toggleTheme()">
+                <i id="theme-icon" class="bi bi-moon-stars-fill"></i>
             </div>
         </header>
 
-        <div class="row g-4 mb-4">
-            <div class="col-12 col-md-6 col-lg-3">
-                <div class="card card-custom p-4 bg-white text-dark">
-                    <div class="text-muted small fw-bold">CITAS TOTALES</div>
-                    <h2 class="fw-bold">1,250</h2>
-                    <span class="text-success small fw-bold">+12% este mes</span>
-                </div>
-            </div>
-            <div class="card card-custom p-4 shadow-sm border-0">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h5 class="fw-bold mb-0">Gestión de Equipo</h5>
-        <button class="btn btn-dark btn-sm rounded-pill" data-bs-toggle="modal" data-bs-target="#modalAddEquipo">
-            + Vincular Usuario
-        </button>
-    </div>
-
-    <div class="table-responsive">
-        <table class="table table-hover align-middle">
-            <thead class="table-light small">
-                <tr>
-                    <th>Nombre / Usuario</th>
-                    <th>Subrol</th>
-                    <th>Acceso</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                @* Aquí harías un @foreach (var p in Model.Personal) *@
-                <tr>
-                    <td><strong>Carlos Ruiz</strong><br><small class="text-muted">@@carlos_barbero</small></td>
-                    <td><span class="badge bg-info text-dark">Prestador</span></td>
-                    <td><small>Citas + Estadísticas personales</small></td>
-                    <td><button class="btn btn-sm btn-outline-danger">Eliminar</button></td>
-                </tr>
-                <tr>
-                    <td><strong>Sofía López</strong><br><small class="text-muted">@@sofi_agenda</small></td>
-                    <td><span class="badge bg-secondary">Secretario</span></td>
-                    <td><small>Agenda total + Clientes</small></td>
-                    <td><button class="btn btn-sm btn-outline-danger">Eliminar</button></td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-</div>
-            </div>
-            <div class="col-12 col-md-6 col-lg-3">
-               <div class="card card-custom p-4 shadow-sm border-0 rounded-4 mt-4">
-    <h5 class="fw-bold mb-3"><i class="bi bi-clock-history text-primary"></i> Horarios de Atención</h5>
-    <p class="small text-muted">Configura tus horas de apertura y cierre para que tus clientes sepan cuándo agendar.</p>
-    
-    <table class="table table-borderless align-middle">
-        <thead>
-            <tr class="small text-muted">
-                <th>Día</th>
-                <th>Apertura</th>
-                <th>Cierre</th>
-                <th>¿Descanso?</th>
-            </tr>
-        </thead>
-        <tbody>
-            @{
-                string[] dias = { "Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado" };
-                for (int i = 0; i < 7; i++)
-                {
-                    <tr>
-                        <td class="fw-bold">@dias[i]</td>
-                        <td><input type="time" name="apertura_@i" class="form-control form-control-sm" value="09:00"></td>
-                        <td><input type="time" name="cierre_@i" class="form-control form-control-sm" value="18:00"></td>
-                        <td>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" name="descanso_@i">
-                            </div>
-                        </td>
-                    </tr>
-                }
-            }
-        </tbody>
-    </table>
-    <button class="btn btn-primary w-100 fw-bold mt-2">Actualizar Horario Semanal</button>
-</div>
-                    <div class="text-muted small fw-bold">SERVICIOS</div>
-                    <h2 class="fw-bold">15</h2>
-                    <span class="text-warning small fw-bold text-uppercase">Configurados</span>
-                </div>
-            </div>
-            <div class="col-12 col-md-6 col-lg-3">
-                <div class="card card-custom p-4 bg-white text-dark">
-                    <div class="text-muted small fw-bold">PROMEDIO CITAS</div>
-                    <h2 class="fw-bold">4.8</h2>
-                    <div class="text-warning"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-half"></i></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="row g-4">
-            
-            <div class="col-12 col-xl-8">
-                <div class="card card-custom p-4">
-                    <h5 class="fw-bold mb-4"><i class="bi bi-trophy me-2 text-warning"></i>Usuarios con más Citas</h5>
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle">
-                            <thead class="table-light text-uppercase small">
-                                <tr>
-                                    <th>Usuario</th>
-                                    <th>Citas</th>
-                                    <th>Estatus</th>
-                                    <th>Acción</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td><strong>Juan Pérez</strong><br><small class="text-muted">juan@@mail.com</small></td>
-                                    <td><span class="badge bg-dark rounded-pill">32 agendadas</span></td>
-                                    <td><span class="text-success">● VIP</span></td>
-                                    <td><button class="btn btn-sm btn-outline-dark">Gestionar</button></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>María García</strong><br><small class="text-muted">maria@@mail.com</small></td>
-                                    <td><span class="badge bg-dark rounded-pill">15 agendadas</span></td>
-                                    <td><span class="text-primary">● Frecuente</span></td>
-                                    <td><button class="btn btn-sm btn-outline-dark">Gestionar</button></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Katto Jara</strong><br><small class="text-muted">admin@@axcan.com</small></td>
-                                    <td><span class="badge bg-dark rounded-pill">12 agendadas</span></td>
-                                    <td><span class="text-warning">● Premium</span></td>
-                                    <td><button class="btn btn-sm btn-outline-dark">Gestionar</button></td>
-                                </tr>
-                            </tbody>
-                        </table>
+        @if(rolActual == "administrador")
+        {
+            <div class="row g-4 mb-4" id="stats">
+                <div class="col-12 col-md-6 col-lg-3">
+                    <div class="card card-custom p-4 bg-white text-dark">
+                        <div class="text-muted small fw-bold">CITAS TOTALES</div>
+                        <h2 class="fw-bold">1,250</h2>
+                        <span class="text-success small fw-bold">+12% este mes</span>
                     </div>
                 </div>
-            </div>
-            
-@model axcan.Models.Empresa
-@{ Layout = "_Layout"; }
+                
+                <div class="col-12 col-md-12 col-lg-9" id="personal">
+                    <div class="card card-custom p-4 shadow-sm border-0">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h5 class="fw-bold mb-0">Gestión de Equipo</h5>
+                            <button class="btn btn-dark btn-sm rounded-pill" data-bs-toggle="modal" data-bs-target="#modalAddEquipo">
+                                + Vincular Usuario
+                            </button>
+                        </div>
 
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-lg-4 mb-4">
-            <div class="card shadow-sm border-0 p-4 rounded-4">
-                <h5 class="fw-bold mb-3">Personalizar Card</h5>
-                <form asp-action="EditarNegocio" method="post" enctype="multipart/form-data">
-                    <input type="hidden" asp-for="id_empresa" />
-                    
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">Nombre del Negocio</label>
-                        <input type="text" asp-for="nombre_empresa" class="form-control">
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">Mover Ubicación (GPS)</label>
-                        <div id="mapaAdmin" style="height: 200px; border-radius: 10px;" class="border"></div>
-                        <input type="hidden" id="lat" asp-for="ubicacion_lat">
-                        <input type="hidden" id="lng" asp-for="ubicacion_lng">
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">Logo Nuevo</label>
-                        <input type="file" name="logoArchivo" class="form-control form-control-sm">
-                    </div>
-
-                    <button type="submit" class="btn btn-primary w-100 fw-bold">Guardar Cambios</button>
-                </form>
-            </div>
-        </div>
-
-        <div class="col-lg-8">
-            <div class="card shadow-sm border-0 p-4 rounded-4">
-                <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
-                    <li class="nav-item">
-                        <button class="nav-link active rounded-pill" data-bs-toggle="pill" data-bs-target="#mensual">Mensual</button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link rounded-pill" data-bs-toggle="pill" data-bs-target="#semanal">Semanal</button>
-                    </li>
-                </ul>
-
-                <div class="tab-content">
-                    <div class="tab-pane fade show active" id="mensual">
-                        <div class="calendario-mensual-container">
-                            @* Aquí va la lógica de celdas que Axel hizo a mano *@
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h4 class="fw-bold mb-0">Marzo 2026</h4>
-                                <div><button class="btn btn-sm btn-light border"> < </button> <button class="btn btn-sm btn-light border"> > </button></div>
-                            </div>
-                            <table class="table table-bordered text-center">
-                                <thead class="bg-light">
-                                    <tr>
-                                        <th>Lun</th><th>Mar</th><th>Mié</th><th>Jue</th><th>Vie</th><th>Sáb</th><th>Dom</th>
-                                    </tr>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light small">
+                                    <tr><th>Nombre / Usuario</th><th>Subrol</th><th>Acciones</th></tr>
                                 </thead>
                                 <tbody>
-                                    @* Generación manual de días *@
-                                    <tr>
-                                        <td></td><td></td><td></td><td>1</td><td>2</td><td>3</td><td>4</td>
-                                    </tr>
-                                    @* ... resto de la cuadrícula de Axel ... *@
+                                    @if(ViewBag.Personal != null) {
+                                        foreach (var p in ViewBag.Personal) {
+                                            <tr>
+                                                <td><strong>@p.nombre</strong><br><small class="text-muted">@@@p.username</small></td>
+                                                <td><span class="badge @(p.subrol == "prestador" ? "bg-info text-dark" : "bg-secondary")">@p.subrol.ToUpper()</span></td>
+                                                <td><button class="btn btn-sm btn-outline-danger">Eliminar</button></td>
+                                            </tr>
+                                        }
+                                    } else {
+                                        <tr><td colspan="3" class="text-center text-muted">No hay personal vinculado.</td></tr>
+                                    }
                                 </tbody>
                             </table>
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    <div class="tab-pane fade" id="semanal">
-                        <div class="calendario-semanal-timeline">
-                            <div class="row g-0 border-top">
-                                <div class="col-2 border-end py-3 text-center bg-light fw-bold">Hora</div>
-                                <div class="col border-end py-3 text-center fw-bold">Lunes 02</div>
-                                <div class="col border-end py-3 text-center fw-bold">Martes 03</div>
-                                @* ... Columnas de Axel ... *@
+            <div class="row g-4 mb-4" id="configuracion">
+                <div class="col-lg-4">
+                    <div class="card shadow-sm border-0 p-4 rounded-4 card-custom">
+                        <h5 class="fw-bold mb-3">Personalizar Card</h5>
+                        <form asp-action="EditarNegocio" method="post" enctype="multipart/form-data">
+                            <input type="hidden" asp-for="id_empresa" />
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Nombre del Negocio</label>
+                                <input type="text" asp-for="nombre_empresa" class="form-control">
                             </div>
-                            <div class="row g-0 border-top">
-                                <div class="col-2 border-end py-2 text-center small text-muted">09:00 AM</div>
-                                <div class="col border-end bg-primary-subtle p-1"><small>Cita: Juan</small></div>
-                                <div class="col border-end"></div>
-                                @* ... Filas de tiempo de Axel ... *@
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Mover Ubicación (GPS)</label>
+                                <div id="mapaAdmin" style="height: 200px; border-radius: 10px;" class="border"></div>
+                                <input type="hidden" id="lat" asp-for="ubicacion_lat">
+                                <input type="hidden" id="lng" asp-for="ubicacion_lng">
                             </div>
-                        </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Logo Nuevo</label>
+                                <input type="file" name="logoArchivo" class="form-control form-control-sm">
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100 fw-bold">Guardar Cambios</button>
+                        </form>
                     </div>
                 </div>
+
+                <div class="col-lg-8">
+                    <div class="card card-custom p-4 h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-bold m-0">Gestión de Servicios</h5>
+                            <span class="badge bg-warning text-dark">Servicios Activos</span>
+                        </div>
+                        <div class="list-group list-group-flush mb-3 flex-grow-1" style="max-height: 400px; overflow-y: auto;">
+                            @if(ViewBag.Servicios != null) {
+                                foreach(var s in ViewBag.Servicios) {
+                                    <div class="list-group-item d-flex justify-content-between p-3 border-0 bg-light rounded-4 mb-2">
+                                        <span>@s.nombre_servicio <small class="text-muted d-block">@s.duracion_minutos min</small></span>
+                                        <span class="fw-bold">$@s.precio</span>
+                                    </div>
+                                }
+                            } else {
+                                <p class="text-muted text-center">No has agregado servicios.</p>
+                            }
+                        </div>
+                        <button class="btn btn-dark w-100 py-3 rounded-4 mt-auto" data-bs-toggle="modal" data-bs-target="#modalAddServicio">
+                            <i class="bi bi-plus-lg me-2"></i>Agregar Servicio Nuevo
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+        else if(rolActual == "secretario" || rolActual == "prestador")
+        {
+            <div id="calendario-secretario" class="d-flex justify-content-between align-items-center mb-4">
+                <h3 class="fw-bold m-0"><i class="bi bi-calendar2-week text-primary me-2"></i> Gestión de Citas</h3>
+            </div>
+
+            <div class="row g-2">
+                <div class="col columna-dia"><div class="cabecera-dia text-muted">3 Lun</div></div>
+                <div class="col columna-dia"><div class="cabecera-dia text-muted">4 Mar</div></div>
+                
+                <div class="col columna-dia border border-warning shadow-sm">
+                    <div class="cabecera-dia dia-actual fw-bold">Hoy</div>
+                    
+                    @if(ViewBag.Citas != null) {
+                        foreach(var c in ViewBag.Citas) {
+                            <div class="cita-block">
+                                <div class="fw-bold text-dark small mb-1">Cita Confirmada</div>
+                                <div class="text-muted small"><i class="bi bi-calendar-check"></i> Folio: @c.id_cita</div>
+                                <span class="badge bg-primary mt-1">@c.estatus</span>
+                            </div>
+                        }
+                    } else {
+                        <p class="small text-muted text-center mt-3">No hay citas para hoy.</p>
+                    }
+                </div>
+                
+                <div class="col columna-dia"><div class="cabecera-dia text-muted">6 Jue</div></div>
+                <div class="col columna-dia"><div class="cabecera-dia text-muted">7 Vie</div></div>
+                <div class="col columna-dia"><div class="cabecera-dia text-muted">8 Sáb</div></div>
+                <div class="col bg-light rounded p-2 text-center" style="opacity: 0.6;"><div class="text-muted fw-bold border-bottom pb-2 mb-2">9 Dom</div></div>
+            </div>
+        }
+    </main>
+
+    <div class="modal fade" id="modalAddEquipo" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow">
+                <form asp-action="AgregarPersonal" asp-controller="Home" method="post">
+                    <div class="modal-header border-0 pb-0">
+                        <h5 class="fw-bold mb-0">Vincular Usuario de Axcan</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="idEmpresa" value="@Model.id_empresa" />
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Nombre de Usuario (Username)</label>
+                            <input type="text" name="usernameBusqueda" class="form-control" placeholder="Ej. juanperez" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Rol en tu negocio</label>
+                            <select name="subrol" class="form-select">
+                                <option value="prestador">Prestador (Atiende citas)</option>
+                                <option value="secretario">Secretario (Gestiona agenda)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 pt-0">
+                        <button type="submit" class="btn btn-dark w-100 rounded-pill fw-bold">Vincular al Equipo</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
-</div>
 
-@section Scripts {
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script>
-        var lat = @Model.ubicacion_lat;
-        var lng = @Model.ubicacion_lng;
-        var map = L.map('mapaAdmin').setView([lat, lng], 15);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-        var marker = L.marker([lat, lng], { draggable: true }).addTo(map);
-
-        marker.on('dragend', function (e) {
-            document.getElementById('lat').value = e.target.getLatLng().lat;
-            document.getElementById('lng').value = e.target.getLatLng().lng;
-        });
-    </script>
-}
-            <div class="col-12 col-xl-4">
-                <div class="card card-custom p-4 h-100">
-                    <h5 class="fw-bold mb-3">Gestión de Servicios</h5>
-                    <div class="list-group list-group-flush mb-3">
-                        <div class="list-group-item d-flex justify-content-between p-3 border-0 bg-light rounded-4 mb-2">
-                            <span>Corte Clásico</span>
-                            <span class="fw-bold">$250</span>
+    <div class="modal fade" id="modalAddServicio" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow">
+                <form asp-action="GuardarServicio" asp-controller="Home" method="post">
+                    <div class="modal-header border-0 pb-0">
+                        <h5 class="fw-bold mb-0">Nuevo Servicio</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="id_empresa" value="@Model.id_empresa" />
+                        <input type="hidden" name="activo" value="true" />
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Nombre del Servicio</label>
+                            <input type="text" name="nombre_servicio" class="form-control" placeholder="Ej. Corte Clásico" required>
                         </div>
-                        <div class="list-group-item d-flex justify-content-between p-3 border-0 bg-light rounded-4 mb-2">
-                            <span>Barba y Ritual</span>
-                            <span class="fw-bold">$180</span>
-                        </div>
-                        <div class="list-group-item d-flex justify-content-between p-3 border-0 bg-light rounded-4 mb-2">
-                            <span>Tinte Axcan</span>
-                            <span class="fw-bold">$450</span>
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <label class="form-label small fw-bold">Precio ($)</label>
+                                <input type="number" step="0.01" name="precio" class="form-control" placeholder="150.00" required>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <label class="form-label small fw-bold">Duración (Mins)</label>
+                                <input type="number" name="duracion_minutos" class="form-control" value="30" required>
+                            </div>
                         </div>
                     </div>
-                    <button class="btn btn-dark w-100 py-3 rounded-4 mt-auto">
-                        <i class="bi bi-pencil-square me-2"></i>Editar Catálogo
-                    </button>
-                </div>
+                    <div class="modal-footer border-0 pt-0">
+                        <button type="submit" class="btn btn-dark w-100 rounded-pill fw-bold">Guardar Servicio</button>
+                    </div>
+                </form>
             </div>
-
-        </div> </main>
+        </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // Toggle Sidebar en Celular
-        function toggleMenu() {
-            document.getElementById('sidebar').classList.toggle('active');
-        }
+        function toggleMenu() { document.getElementById('sidebar').classList.toggle('active'); }
 
-        // Cambio de Color (Blanco / Negro)
         function toggleTheme() {
             const html = document.documentElement;
             const icon = document.getElementById('theme-icon');
-            
             if (html.getAttribute('data-bs-theme') === 'light') {
-                html.setAttribute('data-bs-theme', 'dark');
-                icon.className = 'bi bi-sun-fill';
+                html.setAttribute('data-bs-theme', 'dark'); icon.className = 'bi bi-sun-fill';
             } else {
-                html.setAttribute('data-bs-theme', 'light');
-                icon.className = 'bi bi-moon-stars-fill';
+                html.setAttribute('data-bs-theme', 'light'); icon.className = 'bi bi-moon-stars-fill';
             }
         }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            var mapContainer = document.getElementById('mapaAdmin');
+            if (mapContainer) {
+                var lat = @Model.ubicacion_lat != 0 ? @Model.ubicacion_lat : 19.4326; 
+                var lng = @Model.ubicacion_lng != 0 ? @Model.ubicacion_lng : -99.1332;
+                var map = L.map('mapaAdmin').setView([lat, lng], 15);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+                var marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+
+                marker.on('dragend', function (e) {
+                    document.getElementById('lat').value = e.target.getLatLng().lat;
+                    document.getElementById('lng').value = e.target.getLatLng().lng;
+                });
+            }
+        });
     </script>
 </body>
 </html>
