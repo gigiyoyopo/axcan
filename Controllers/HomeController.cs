@@ -1,8 +1,17 @@
+using System;
+using System.IO;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authentication;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Google.Apis.Auth;
 using axcan.Data; 
 using axcan.Models; 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Http;
+using System.Linq; // <-- ¡Faltaba esta! Es vital para usar .FirstOrDefaultAsync() y LINQ.
 
 namespace axcan.Controllers
 {
@@ -48,7 +57,7 @@ namespace axcan.Controllers
             return View(usuario);
         }
 
-        // --- 2. LÓGICA DE USUARIOS ---
+        // --- 2. LÓGICA DE USUARIOS MANUAL ---
 
         [HttpPost]
         public async Task<IActionResult> ProcesarRegistro(Usuario u)
@@ -121,7 +130,60 @@ namespace axcan.Controllers
             return RedirectToAction("ConfiguracionDeCuenta");
         }
 
-        // --- 3. LÓGICA DE NEGOCIO (CRM Y PLANTILLAS) ---
+        // --- EL PUENTE DE SEGURIDAD CON GOOGLE ---
+
+        [HttpPost]
+        public async Task<IActionResult> AutenticarConGoogle([FromBody] GoogleToken model)
+        {
+            try
+            {
+                var settings = new GoogleJsonWebSignature.ValidationSettings()
+                {
+                    Audience = new List<string>() { "1058925398660-ovi8nq4pj2a0qtn7kmelganfug5lu008.apps.googleusercontent.com" } 
+                };
+                
+                var payload = await GoogleJsonWebSignature.ValidateAsync(model.Credential, settings);
+
+                var user = await _context.usuarios.FirstOrDefaultAsync(u => u.correo == payload.Email);
+                
+                if (user == null)
+                {
+                    user = new Usuario 
+                    {
+                        username = payload.Email.Split('@')[0], 
+                        correo = payload.Email,
+                        nombre = payload.GivenName ?? "Usuario",
+                        apellido_paterno = payload.FamilyName ?? "",
+                        password = "", 
+                        rol = "usuario",
+                        fecha_registro = DateTime.Now
+                    };
+                    _context.usuarios.Add(user);
+                    await _context.SaveChangesAsync();
+                }
+
+                HttpContext.Session.SetInt32("UsuarioId", user.id_usuario);
+                HttpContext.Session.SetString("UsuarioNombre", user.nombre);
+                HttpContext.Session.SetString("UsuarioRol", user.rol);
+
+                var claims = new List<Claim>
+                {
+                    new Claim(ClaimTypes.NameIdentifier, payload.Subject),
+                    new Claim(ClaimTypes.Name, payload.Name),
+                    new Claim(ClaimTypes.Email, payload.Email)
+                };
+                var claimsIdentity = new ClaimsIdentity(claims, "Cookies");
+                await HttpContext.SignInAsync("Cookies", new ClaimsPrincipal(claimsIdentity), new AuthenticationProperties { IsPersistent = true });
+
+                return Json(new { success = true, redirectUrl = Url.Action("Index", "Home") });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = "Error al validar token: " + ex.Message });
+            }
+        }
+
+        // --- 3. LÓGICA DE NEGOCIO ---
 
         [HttpPost]
         public async Task<IActionResult> GuardarEmpresa(Empresa e, IFormFile logoArchivo, string rubroElegido, string rubroOtro)
@@ -136,8 +198,7 @@ namespace axcan.Controllers
                     e.logotipo_url = await GuardarArchivoPersonalizado(logoArchivo, "logos");
                 }
 
-           e.id_administrador = userId.GetValueOrDefault();
-           int idLimpio = userId ?? 0;
+                e.id_administrador = userId.GetValueOrDefault();
                 _context.empresas.Add(e);
 
                 var usuario = await _context.usuarios.FindAsync(userId);
@@ -152,7 +213,7 @@ namespace axcan.Controllers
             }
             catch (Exception ex) {
                 ViewBag.Error = "Error al registrar: " + ex.Message;
-                return View("registron  egocio");
+                return View("registronegocio"); 
             }
         }
 
@@ -184,13 +245,13 @@ namespace axcan.Controllers
             }
         }
 
-        public IActionResult Logout()
+        public async Task<IActionResult> Logout()
         {
             HttpContext.Session.Clear();
+            await HttpContext.SignOutAsync("Cookies");
             return RedirectToAction("login");
         }
 
-        // Método auxiliar para guardar recursos de Axel
         private async Task<string> GuardarArchivoPersonalizado(IFormFile archivo, string carpeta)
         {
             string nombre = Guid.NewGuid().ToString() + Path.GetExtension(archivo.FileName);
@@ -205,37 +266,21 @@ namespace axcan.Controllers
             return $"/{carpeta}/{nombre}";
         }
     
-    [Route("reservar/{nombreUrl}")]
-public async Task<IActionResult> PaginaReserva(string nombreUrl)
-{
-    // Buscamos el negocio por su nombre o ID
-    var empresa = await _context.empresas
-        .FirstOrDefaultAsync(e => e.nombre_empresa.Replace(" ", "-").ToLower() == nombreUrl.ToLower());
+        [Route("reservar/{nombreUrl}")]
+        public async Task<IActionResult> PaginaReserva(string nombreUrl)
+        {
+            var empresa = await _context.empresas
+                .FirstOrDefaultAsync(e => e.nombre_empresa.Replace(" ", "-").ToLower() == nombreUrl.ToLower());
 
-    if (empresa == null) return NotFound();
+            if (empresa == null) return NotFound();
 
-    // Pasamos los datos de personalización (color, logo, banner, plantilla) a la vista
- 
-    return View("Plantilla_" + empresa.id_plantilla, empresa); 
-}
-//--ver hoariors disponibles 
-[HttpGet]
-public async Task<JsonResult> GetHorariosDisponibles(int idEmpresa, int diaSeleccionado)
-{
-    // Buscamos el horario configurado para ese día de la semana
-    var horario = await _context.horarios_negocio
-        .FirstOrDefaultAsync(h => h.id_empresa == idEmpresa && h.dia_semana == diaSeleccionado);
-
-    if (horario == null || horario.es_dia_descanso)
-    {
-        return Json(new { disponible = false });
+            return View("Plantilla_" + empresa.id_plantilla, empresa);
+        }
     }
 
-    return Json(new { 
-        disponible = true, 
-        apertura = horario.hora_apertura.ToString(@"hh\:mm"), 
-        cierre = horario.hora_cierre.ToString(@"hh\:mm") 
-    });
-}
-}
+    // <-- ¡Aquí va la clase!
+    public class GoogleToken
+    {
+        public string Credential { get; set; }
+    }
 }
