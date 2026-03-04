@@ -16,6 +16,8 @@ namespace axcan.Data
         public DbSet<Secretario> secretarios { get; set; }
         public DbSet<HorarioNegocio> horarios_negocio { get; set; }
         public DbSet<Cita> citas { get; set; }
+        public DbSet<HorarioNegocio> horarios_negocio { get; set; }
+public DbSet<Resena> resenas { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -1,3 +1,4 @@
+// Mega Controlador AXCAN: Maneja Portal (Búsqueda/Estrellas), Admin SPA, Roles, AJAX Calendario y Reservas.
 using Microsoft.AspNetCore.Mvc;
 using axcan.Data; 
 using axcan.Models; 
@@ -16,16 +17,79 @@ namespace axcan.Controllers
         }
 
         // =======================================================
-        // FASE 4: VISTAS PÚBLICAS Y ENRUTAMIENTO DINÁMICO (URLs)
+        // EL BUSCADOR Y LAS ESTRELLAS
         // =======================================================
-        
-        public async Task<IActionResult> Index() 
+        [HttpGet]
+        public async Task<IActionResult> Index(string busqueda)
         {
-            var empresas = await _context.empresas.ToListAsync();
-            return View(empresas);
+            var empresasQuery = _context.empresas.AsQueryable();
+
+            if (!string.IsNullOrEmpty(busqueda))
+            {
+                busqueda = busqueda.ToLower();
+                empresasQuery = empresasQuery.Where(e => 
+                    e.nombre_empresa.ToLower().Contains(busqueda) || 
+                    e.rubro.ToLower().Contains(busqueda));
+            }
+
+            var listaEmpresas = await empresasQuery.ToListAsync();
+            var empresasConEstrellas = new List<dynamic>();
+
+            foreach (var emp in listaEmpresas)
+            {
+                var resenas = await _context.resenas.Where(r => r.id_empresa == emp.id_empresa).ToListAsync();
+                double promedio = resenas.Any() ? resenas.Average(r => r.calificacion) : 0;
+
+                empresasConEstrellas.Add(new {
+                    Empresa = emp,
+                    PromedioEstrellas = Math.Round(promedio, 1),
+                    TotalResenas = resenas.Count
+                });
+            }
+
+            ViewBag.EmpresasDestacadas = empresasConEstrellas;
+            return View();
         }
 
-        // ¡LA MAGIA DE LAS PÁGINAS INDEPENDIENTES! (axcan.com/reservar/barberia-paco)
+        // =======================================================
+        // PANEL ADMIN SPA PREMIUM
+        // =======================================================
+        [Route("admin")]
+        public async Task<IActionResult> Admin()
+        {
+            var userId = HttpContext.Session.GetInt32("UsuarioId");
+            if (userId == null) return RedirectToAction("login");
+
+            var empresa = await _context.empresas.FirstOrDefaultAsync(e => e.id_administrador == userId);
+            
+            if (empresa != null) 
+            {
+                ViewBag.RolLocal = "administrador";
+                ViewBag.Servicios = await _context.servicios.Where(s => s.id_empresa == empresa.id_empresa).ToListAsync();
+                ViewBag.Personal = await (from s in _context.secretarios
+                                      join u in _context.usuarios on s.id_usuario equals u.id_usuario
+                                      where s.id_empresa == empresa.id_empresa
+                                      select new { u.nombre, u.username, s.subrol, s.id_secretario }).ToListAsync();
+                
+                ViewBag.Horarios = await _context.horarios_negocio.Where(h => h.id_empresa == empresa.id_empresa).ToListAsync();
+                return View(empresa);
+            }
+
+            var empleado = await _context.secretarios.FirstOrDefaultAsync(s => s.id_usuario == userId);
+            if (empleado != null) 
+            {
+                var empresaEmpleado = await _context.empresas.FindAsync(empleado.id_empresa);
+                ViewBag.RolLocal = empleado.subrol;
+                ViewBag.Citas = await _context.citas.Where(c => c.id_empresa == empleado.id_empresa).ToListAsync();
+                return View(empresaEmpleado);
+            }
+
+            return RedirectToAction("registronegocio");
+        }
+
+        // =======================================================
+        // PLANTILLAS DINÁMICAS (Para Axel)
+        // =======================================================
         [Route("reservar/{nombreUrl}")]
         public async Task<IActionResult> PaginaCliente(string nombreUrl)
         {
@@ -33,88 +97,26 @@ namespace axcan.Controllers
                 .FirstOrDefaultAsync(e => e.nombre_empresa.Replace(" ", "-").ToLower() == nombreUrl.ToLower());
 
             if (empresa == null) return NotFound("Página no encontrada.");
-            
-            // Aquí le mandamos los datos al molde de Axel
-            return View("PlantillaReserva", empresa); 
-        }
 
-        public IActionResult login() => View();
-        public IActionResult registro() => View();
-        public IActionResult registronegocio() => View();
+            ViewBag.Servicios = await _context.servicios.Where(s => s.id_empresa == empresa.id_empresa && s.activo).ToListAsync();
+            ViewBag.Personal = await (from s in _context.secretarios
+                                      join u in _context.usuarios on s.id_usuario equals u.id_usuario
+                                      where s.id_empresa == empresa.id_empresa && s.subrol == "prestador"
+                                      select new { u.nombre, s.id_secretario }).ToListAsync();
 
-        // =======================================================
-        // FASE 2: LÓGICA DE ROLES (Admin vs Secretario)
-        // =======================================================
-        
-        [Route("admin")]
-public async Task<IActionResult> Admin()
-{
-    var userId = HttpContext.Session.GetInt32("UsuarioId");
-    if (userId == null) return RedirectToAction("login");
+            string nombreVista = empresa.id_plantilla switch
+            {
+                2 => "Plantilla_2",
+                3 => "Plantilla_3",
+                _ => "Plantilla_1"
+            };
 
-    // 1. SI ES EL DUEÑO (ADMINISTRADOR)
-    var empresa = await _context.empresas.FirstOrDefaultAsync(e => e.id_administrador == userId);
-    
-    if (empresa != null) {
-        ViewBag.RolLocal = "administrador";
-        
-        // --- MAGIA: Traemos los Servicios Reales ---
-        ViewBag.Servicios = await _context.servicios
-            .Where(s => s.id_empresa == empresa.id_empresa).ToListAsync();
-
-        // --- MAGIA: Traemos el Personal Real (Join con Usuarios) ---
-        var personal = await (from s in _context.secretarios
-                              join u in _context.usuarios on s.id_usuario equals u.id_usuario
-                              where s.id_empresa == empresa.id_empresa
-                              select new { 
-                                  u.nombre, 
-                                  u.username, 
-                                  s.subrol,
-                                  s.id_secretario
-                              }).ToListAsync();
-        ViewBag.Personal = personal;
-
-        return View(empresa);
-    }
-
-    // 2. SI ES EL EMPLEADO (SECRETARIO / PRESTADOR)
-    var empleado = await _context.secretarios.FirstOrDefaultAsync(s => s.id_usuario == userId);
-    if (empleado != null) {
-        var empresaEmpleado = await _context.empresas.FindAsync(empleado.id_empresa);
-        ViewBag.RolLocal = empleado.subrol;
-        
-        // --- MAGIA: Traemos las Citas Reales del negocio ---
-        ViewBag.Citas = await _context.citas
-            .Where(c => c.id_empresa == empleado.id_empresa)
-            .ToListAsync();
-
-        return View(empresaEmpleado);
-    }
-
-    return RedirectToAction("registronegocio");
-}
-
-        // Lógica de Login (Igual que antes)
-        [HttpPost]
-        public async Task<IActionResult> ProcesarLogin(string username, string password)
-        {
-            var user = await _context.usuarios
-                .FirstOrDefaultAsync(u => (u.username == username || u.correo == username) && u.password == password);
-
-            if (user != null) {
-                HttpContext.Session.SetInt32("UsuarioId", user.id_usuario);
-                HttpContext.Session.SetString("UsuarioNombre", user.nombre);
-                HttpContext.Session.SetString("UsuarioRol", user.rol);
-                return RedirectToAction("Index");
-            }
-            ViewBag.Error = "Usuario o contraseña incorrectos."; 
-            return View("login");
+            return View(nombreVista, empresa);
         }
 
         // =======================================================
-        // FASE 1: GESTIÓN DE NEGOCIO (Servicios, Personal y Horarios)
+        // GESTIÓN DE NEGOCIO (Guardar Datos)
         // =======================================================
-
         [HttpPost]
         public async Task<IActionResult> EditarNegocio(Empresa e, IFormFile logoArchivo, IFormFile bannerArchivo)
         {
@@ -157,34 +159,147 @@ public async Task<IActionResult> Admin()
             return RedirectToAction("Admin");
         }
 
+        [HttpPost]
+        public async Task<IActionResult> GuardarHorarios(int id_empresa, IFormCollection form)
+        {
+            var horariosAntiguos = _context.horarios_negocio.Where(h => h.id_empresa == id_empresa);
+            _context.horarios_negocio.RemoveRange(horariosAntiguos);
+            await _context.SaveChangesAsync();
+
+            for (int i = 0; i < 7; i++)
+            {
+                var apertura = form[$"apertura_{i}"];
+                var cierre = form[$"cierre_{i}"];
+                var esDescanso = form[$"descanso_{i}"].Count > 0;
+
+                var nuevoHorario = new HorarioNegocio
+                {
+                    id_empresa = id_empresa,
+                    dia_semana = i,
+                    hora_apertura = string.IsNullOrEmpty(apertura) ? TimeSpan.Zero : TimeSpan.Parse(apertura),
+                    hora_cierre = string.IsNullOrEmpty(cierre) ? TimeSpan.Zero : TimeSpan.Parse(cierre),
+                    es_descanso = esDescanso
+                };
+                _context.horarios_negocio.Add(nuevoHorario);
+            }
+            await _context.SaveChangesAsync();
+            TempData["Exito"] = "Horarios guardados correctamente.";
+            return RedirectToAction("Admin");
+        }
+
         // =======================================================
-        // FASE 3: EL MOTOR DEL CALENDARIO DE AXEL
+        // LA API DEL CALENDARIO (AJAX DE AXEL)
         // =======================================================
+        [HttpGet]
+        public async Task<IActionResult> GetHorariosDisponibles(int idEmpresa, DateTime fecha)
+        {
+            int diaSemana = (int)fecha.DayOfWeek;
+            
+            var horarioDia = await _context.horarios_negocio
+                .FirstOrDefaultAsync(h => h.id_empresa == idEmpresa && h.dia_semana == diaSemana);
+
+            if (horarioDia == null || horarioDia.es_descanso)
+                return Json(new { disponibles = new List<string>(), mensaje = "Día de descanso" });
+
+            var citasOcupadas = await _context.citas
+                .Where(c => c.id_empresa == idEmpresa && c.fecha_cita.Date == fecha.Date)
+                .Select(c => c.hora_cita)
+                .ToListAsync();
+
+            var horasDisponibles = new List<string>();
+            var horaActual = horarioDia.hora_apertura;
+
+            while (horaActual < horarioDia.hora_cierre)
+            {
+                if (!citasOcupadas.Contains(horaActual))
+                {
+                    horasDisponibles.Add(horaActual.ToString(@"hh\:mm"));
+                }
+                horaActual = horaActual.Add(TimeSpan.FromMinutes(30));
+            }
+
+            return Json(new { disponibles = horasDisponibles });
+        }
 
         [HttpPost]
         public async Task<IActionResult> AgendarCita(Cita nuevaCita)
         {
-            nuevaCita.estatus = "pendiente";
+            nuevaCita.estatus = "Confirmada";
+            nuevaCita.fecha_creacion = DateTime.Now;
             _context.citas.Add(nuevaCita);
             await _context.SaveChangesAsync();
-            
-            // Retorna a la página de éxito o recarga la plantilla
-            return RedirectToAction("Index"); 
+            return Json(new { success = true, mensaje = "Cita agendada con éxito" });
         }
 
         [HttpGet]
         public async Task<JsonResult> GetDatosCalendario(int idEmpresa)
         {
-            // Este endpoint es para que el JS de Axel cargue los selects dinámicamente
             var servicios = await _context.servicios.Where(s => s.id_empresa == idEmpresa && s.activo).ToListAsync();
             var personal = await _context.secretarios.Where(s => s.id_empresa == idEmpresa && s.subrol == "prestador").ToListAsync();
-            
             return Json(new { servicios = servicios, prestadores = personal });
         }
 
         // =======================================================
-        // MÉTODOS AUXILIARES
+        // AUTENTICACIÓN Y PERFIL DE USUARIO
         // =======================================================
+        public IActionResult login() => View();
+        public IActionResult registro() => View();
+        public IActionResult registronegocio() => View();
+
+        [HttpPost]
+        public async Task<IActionResult> ProcesarLogin(string username, string password)
+        {
+            var user = await _context.usuarios
+                .FirstOrDefaultAsync(u => (u.username == username || u.correo == username) && u.password == password);
+
+            if (user != null) {
+                HttpContext.Session.SetInt32("UsuarioId", user.id_usuario);
+                HttpContext.Session.SetString("UsuarioNombre", user.nombre);
+                HttpContext.Session.SetString("UsuarioRol", user.rol);
+                return RedirectToAction("Index");
+            }
+            ViewBag.Error = "Usuario o contraseña incorrectos."; 
+            return View("login");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ActualizarPerfil(Usuario modeloModificado)
+        {
+            var userId = HttpContext.Session.GetInt32("UsuarioId");
+            if (userId == null) return RedirectToAction("login");
+
+            var usuarioOcupado = await _context.usuarios
+                .AnyAsync(u => (u.username == modeloModificado.username || u.correo == modeloModificado.correo) && u.id_usuario != userId);
+
+            if (usuarioOcupado)
+            {
+                TempData["Error"] = "El Nombre de Usuario o Correo ya están en uso.";
+                return RedirectToAction("ConfiguracionDeCuenta"); 
+            }
+
+            var usuarioDb = await _context.usuarios.FindAsync(userId);
+            if (usuarioDb != null)
+            {
+                usuarioDb.nombre = modeloModificado.nombre;
+                usuarioDb.apellido_paterno = modeloModificado.apellido_paterno;
+                usuarioDb.apellido_materno = modeloModificado.apellido_materno;
+                usuarioDb.correo = modeloModificado.correo;
+                usuarioDb.username = modeloModificado.username;
+                
+                if (!string.IsNullOrEmpty(modeloModificado.password)) 
+                {
+                    usuarioDb.password = modeloModificado.password;
+                }
+
+                _context.usuarios.Update(usuarioDb);
+                await _context.SaveChangesAsync(); 
+                
+                HttpContext.Session.SetString("UsuarioNombre", usuarioDb.nombre);
+                TempData["Exito"] = "Perfil actualizado correctamente.";
+            }
+
+            return RedirectToAction("ConfiguracionDeCuenta");
+        }
 
         public IActionResult Logout() {
             HttpContext.Session.Clear();
