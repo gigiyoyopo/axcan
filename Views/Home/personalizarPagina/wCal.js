@@ -22,6 +22,10 @@ let index = systemMonth;
 let a = 0; //Variable para el modal
 let b = 0; //Variable para iniciar una ves el script cuando la página carga
 
+
+let lastCell = "body";
+
+
 let dayAcc = systemDate + 6;
 let accCopy = dayAcc;
 
@@ -40,7 +44,8 @@ function load() {
 
 
 function prev_week(weekNum) {
-    
+
+    lastCell = "body";
     dayAcc = dayAcc - 7;
     var x = 6 - systemDay;
     
@@ -70,6 +75,7 @@ function prev_week(weekNum) {
 
 function next_week() {
 
+    lastCell = "body";
     dayAcc+=7;
     var x = 6 - systemDay;
 
@@ -82,37 +88,27 @@ function next_week() {
         maxPrev = dayAcc;
         index++;
 
-        console.log("Index: " + index);
-            console.log("dayAcc: " + dayAcc);
+       // console.log("Index: " + index);
+            //console.log("dayAcc: " + dayAcc);
         if(index == 12 && dayAcc - 7>= matrixMonths[index][1]) {
             const a = document.getElementById("next_month");
             a.setAttribute("disabled");
         }
 
 
-        console.log("Index after: " + index);
-        console.log("dayAcc after: " + dayAcc);
+        //console.log("Index after: " + index);
+        //console.log("dayAcc after: " + dayAcc);
         
         
         dayAcc = systemDay - matrixMonths[index][0] + 1;
         
         if(dayAcc < 0) {
             dayAcc = dayAcc + 7;
-        }
-
-        if(dayAcc == 0) {
+        } else if(dayAcc == 0) {
             dayAcc = 7;
-        }
-
-        if(dayAcc > 7) {
+        } else if(dayAcc > 7) {
             dayAcc = x;
-        }    
-
-
-
-            
-
-
+        }
     }
 
     
@@ -206,11 +202,23 @@ document.onclick = function checkDay(bool) {
 
     if(stringArray.length == 6) {
         if(a == 0 && stringArray[5] == "a") {
-            openModal(stringArray);
+           // openModal(stringArray);
+            if(lastCell != targetId) {
+                console.log(targetId);
+            displayDate(stringArray);
+            colorCell(targetId, lastCell);
+            lastCell = targetId;
+            }
         }
     } else if (stringArray.length == 7) {
         if(a == 0 && stringArray[6] == "a") {
-            openModal(stringArray);
+            //openModal(stringArray);
+            if(lastCell != targetId) {
+                console.log(targetId);
+            displayDate(stringArray);
+            colorCell(targetId, lastCell);
+            lastCell = targetId;
+            }
         }
     }
     
@@ -218,7 +226,7 @@ document.onclick = function checkDay(bool) {
 
 
 
-function openModal(stringArray) {
+function displayDate(stringArray) {
     var dateString = "";
     var dateNumber;
 
@@ -247,9 +255,111 @@ function openModal(stringArray) {
 
     dateStringElement.textContent = dateString;
  
+    enable();
+
 }
 
 
+function colorCell(targetId, lastCell) {
+
+    const lastCellR = document.getElementById(lastCell);
+    const selectedCell = document.getElementById(targetId);
+
+    console.log("colorCell: " + targetId);
+    selectedCell.style.backgroundColor = "grey";
+
+    console.log("lastCellR: " + lastCell);
+    lastCellR.style.backgroundColor = "white";
+    
+}
+
+
+
+
+let hourSelect = document.getElementById("hour-select");
+
+let serviceSelect = document.getElementById("service-select");
+
+let serverSelect = document.getElementById("server-select");
+
+let accept = document.getElementById("confirm");
+
+function enable() {
+
+    a++;
+
+    const serviceSelection = document.getElementById("service-select");
+    const hourSelection = document.getElementById("hour-select");
+    const serverSelection = document.getElementById("server-select");
+
+    serviceSelection.setAttribute("disabled", "true");
+    hourSelection.setAttribute("disabled", "true");
+    serverSelection.setAttribute("disabled", "true");
+    accept.setAttribute("disabled", "true");
+
+    const selectedOption = document.getElementById("selected-option");
+    const selectedOption1 = document.getElementById("selected-option-1");
+    const selectedOption2 = document.getElementById("selected-option-2");
+    
+    selectedOption.remove();
+    selectedOption1.remove();
+    selectedOption2.remove();
+
+    //price.textContent = "Precio:";
+
+    const newSelectedOption = document.createElement("option");
+    const newSelectedOption1 = document.createElement("option");
+    const newSelectedOption2 = document.createElement("option");
+
+    const text = document.createTextNode("Selecciona un servicio");
+    const text1 = document.createTextNode("Selecciona un horario");
+    const text2 = document.createTextNode("Selecciona un servidor");
+
+    serviceSelection.appendChild(newSelectedOption);
+    hourSelection.appendChild(newSelectedOption1);
+    serverSelection.appendChild(newSelectedOption2);
+    
+    newSelectedOption.setAttribute("id", "selected-option");
+    newSelectedOption.setAttribute("value", "null");
+    newSelectedOption.setAttribute("selected", "true");
+    newSelectedOption.setAttribute("disabled", "true");
+
+    newSelectedOption1.setAttribute("id", "selected-option-1");
+    newSelectedOption1.setAttribute("value", "null");
+    newSelectedOption1.setAttribute("selected", "true");
+    newSelectedOption1.setAttribute("disabled", "true");
+
+    newSelectedOption2.setAttribute("id", "selected-option-2");
+    newSelectedOption2.setAttribute("value", "null");
+    newSelectedOption2.setAttribute("selected", "true");
+    newSelectedOption2.setAttribute("disabled", "true");
+    
+    
+    newSelectedOption.appendChild(text);
+    newSelectedOption1.appendChild(text1);
+    newSelectedOption2.appendChild(text2);
+
+    if(a != 0) {
+
+        serviceSelect.removeAttribute("disabled");
+        a = 0;
+    }
+}
+
+serviceSelect.addEventListener("change", () => {
+    console.log("paso 1");
+    hourSelect.removeAttribute("disabled");
+});
+
+hourSelect.addEventListener("change", () => {
+    console.log("paso 2");
+    serverSelect.removeAttribute("disabled");
+});
+
+serverSelect.addEventListener("change", () => {
+    console.log("paso 3");
+    accept.removeAttribute("disabled");
+});
 
 const prev = document.getElementById("prev_month");
 prev.addEventListener("click", prev_week);
