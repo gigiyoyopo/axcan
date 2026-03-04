@@ -1,9 +1,8 @@
-// 1. FUNCIÓN PARA RECIBIR EL TOKEN DE GOOGLE
+// 1. FUNCIÓN MAESTRA PARA LOGIN Y REGISTRO CON GOOGLE
 async function handleGoogleResponse(response) {
     console.log("Token recibido de Google. Enviando al backend de Axcan (.NET)...");
 
     try {
-        // Le enviamos el token a nuestra puerta de seguridad en C#
         const resBackend = await fetch('/Home/AutenticarConGoogle', {
             method: 'POST',
             headers: {
@@ -16,11 +15,10 @@ async function handleGoogleResponse(response) {
 
         if (resultadoNet.success) {
             console.log("¡.NET te dio el pase de entrada! Redirigiendo...");
-            // C# nos dio luz verde, vamos al panel
             window.location.href = resultadoNet.redirectUrl; 
         } else {
-            console.error("El servidor rechazó el login:", resultadoNet.message);
-            alert("Error de seguridad en .NET: " + resultadoNet.message);
+            console.error("El servidor rechazó el login/registro:", resultadoNet.message);
+            alert("Error en .NET: " + resultadoNet.message);
         }
     } catch (err) {
         console.error("Error conectando con C#:", err);
@@ -28,13 +26,23 @@ async function handleGoogleResponse(response) {
     }
 }
 
-// 2. LÓGICA DEL FORMULARIO MANUAL (Opcional, por si lo usas después)
+// 2. VALIDACIÓN DEL FORMULARIO DE REGISTRO MANUAL
 window.onload = function () {
-    const loginForm = document.getElementById('loginForm');
-    if(loginForm) {
-        loginForm.addEventListener('submit', async function(e) {
-            // Aquí en el futuro puedes hacer un fetch a tu login manual de C#
-            console.log("Intentando login manual...");
+    const registerForm = document.getElementById('registerForm');
+
+    // Solo ejecutamos esto si estamos en la página de registro
+    if (registerForm) {
+        registerForm.addEventListener('submit', function(e) {
+            const pass = document.getElementById('regPass').value;
+            const passConfirm = document.getElementById('regPassConfirm').value;
+
+            if (pass !== passConfirm) {
+                e.preventDefault(); // Bloqueamos el envío
+                alert("¡Las contraseñas no coinciden, cawn! Chécalo bien.");
+                return;
+            }
+
+            // Si todo está bien, dejamos que el formulario llegue a C# sin decir nada extra.
         });
     }
 };

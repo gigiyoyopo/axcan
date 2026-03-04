@@ -132,6 +132,7 @@ namespace axcan.Controllers
 
         // --- EL PUENTE DE SEGURIDAD CON GOOGLE ---
 
+        // --- EL PUENTE DE SEGURIDAD CON GOOGLE ---
         [HttpPost]
         public async Task<IActionResult> AutenticarConGoogle([FromBody] GoogleToken model)
         {
@@ -144,17 +145,22 @@ namespace axcan.Controllers
                 
                 var payload = await GoogleJsonWebSignature.ValidateAsync(model.Credential, settings);
 
-                var user = await _context.usuarios.FirstOrDefaultAsync(u => u.correo == payload.Email);
+                // obligamos a que el correo sea minusculas para que postgresql no se confunda
+                string correoPuro = payload.Email.ToLower();
+
+                var user = await _context.usuarios.FirstOrDefaultAsync(u => u.correo.ToLower() == correoPuro);
                 
                 if (user == null)
                 {
+                    // si no existe lo creamos. le agregamos un numero al username para evitar choques con otros usuarios
                     user = new Usuario 
                     {
-                        username = payload.Email.Split('@')[0], 
-                        correo = payload.Email,
+                        username = correoPuro.Split('@')[0] + "_" + new Random().Next(100, 999), 
+                        correo = correoPuro,
                         nombre = payload.GivenName ?? "Usuario",
                         apellido_paterno = payload.FamilyName ?? "",
-                        password = "", 
+                        apellido_materno = "", 
+                        password = "EMPTY", // contraseña vacia tal como acordaste con tu equipo
                         rol = "usuario",
                         fecha_registro = DateTime.Now
                     };
@@ -179,7 +185,9 @@ namespace axcan.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new { success = false, message = "Error al validar token: " + ex.Message });
+                // atrapamos el error real de la base de datos por si acaso
+                string detalleError = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+                return BadRequest(new { success = false, message = detalleError });
             }
         }
 
