@@ -20,36 +20,38 @@ namespace axcan.Controllers
         // EL BUSCADOR Y LAS ESTRELLAS
         // =======================================================
         [HttpGet]
-        public async Task<IActionResult> Index(string busqueda)
-        {
-            var empresasQuery = _context.empresas.AsQueryable();
+public async Task<IActionResult> Index(string busqueda)
+{
+    var empresasQuery = _context.empresas.AsQueryable();
 
-            if (!string.IsNullOrEmpty(busqueda))
-            {
-                busqueda = busqueda.ToLower();
-                empresasQuery = empresasQuery.Where(e => 
-                    e.nombre_empresa.ToLower().Contains(busqueda) || 
-                    e.rubro.ToLower().Contains(busqueda));
-            }
+    if (!string.IsNullOrEmpty(busqueda))
+    {
+        busqueda = busqueda.ToLower();
+        empresasQuery = empresasQuery.Where(e => 
+            e.nombre_empresa.ToLower().Contains(busqueda) || 
+            e.rubro.ToLower().Contains(busqueda));
+    }
 
-            var listaEmpresas = await empresasQuery.ToListAsync();
-            var empresasConEstrellas = new List<dynamic>();
+    var listaEmpresas = await empresasQuery.ToListAsync();
+    
+    // USAMOS LA CLASE NUEVA EN LUGAR DE DYNAMIC
+    var empresasConEstrellas = new List<EmpresaConEstrellasDTO>();
 
-            foreach (var emp in listaEmpresas)
-            {
-                var resenas = await _context.resenas.Where(r => r.id_empresa == emp.id_empresa).ToListAsync();
-                double promedio = resenas.Any() ? resenas.Average(r => r.calificacion) : 0;
+    foreach (var emp in listaEmpresas)
+    {
+        var resenas = await _context.resenas.Where(r => r.id_empresa == emp.id_empresa).ToListAsync();
+        double promedio = resenas.Any() ? resenas.Average(r => r.calificacion) : 0;
 
-                empresasConEstrellas.Add(new {
-                    Empresa = emp,
-                    PromedioEstrellas = Math.Round(promedio, 1),
-                    TotalResenas = resenas.Count
-                });
-            }
+        empresasConEstrellas.Add(new EmpresaConEstrellasDTO {
+            Empresa = emp,
+            PromedioEstrellas = Math.Round(promedio, 1),
+            TotalResenas = resenas.Count
+        });
+    }
 
-            ViewBag.EmpresasDestacadas = empresasConEstrellas;
-            return View();
-        }
+    ViewBag.EmpresasDestacadas = empresasConEstrellas;
+    return View();
+}
 
         // =======================================================
         // PANEL ADMIN SPA PREMIUM
@@ -321,5 +323,11 @@ public async Task<IActionResult> GetHorariosDisponibles(int idEmpresa, DateTime 
             }
             return $"/{folder}/{name}";
         }
+    }
+    public class EmpresaConEstrellasDTO
+    {
+        public Empresa Empresa { get; set; }
+        public double PromedioEstrellas { get; set; }
+        public int TotalResenas { get; set; }
     }
 }
