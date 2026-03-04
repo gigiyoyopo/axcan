@@ -5,27 +5,43 @@ using Microsoft.AspNetCore.HttpOverrides;
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 var builder = WebApplication.CreateBuilder(args);
 
-// 1. SERVICIOS
+// =================================================================
+// 1. FASE DE SERVICIOS (TODO DEBE IR ANTES DEL BUILD)
+// =================================================================
+
 builder.Services.AddControllersWithViews();
 
-// Nota: En Render, tu variable de entorno debe llamarse "ConnectionStrings__DefaultConnection" 
-// (con doble guion bajo) para que GetConnectionString la detecte automáticamente.
+// A. Base de Datos (Rescatamos la variable que faltaba)
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString, npgsqlOptions => {
         npgsqlOptions.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null);
     }));
 
-// CONFIGURACIÓN DE SESIÓN (Movido arriba de builder.Build)
+// B. Sesiones (Para que la lógica de tus compañeros funcione)
 builder.Services.AddSession(options => {
     options.IdleTimeout = TimeSpan.FromMinutes(30);
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
 });
 
-// --- LA LÍNEA SAGRADA ---
-var app = builder.Build();
+// C. Seguridad y Cookies (Blindado para producción)
+builder.Services.AddAuthentication(options => {
+    options.DefaultScheme = "Cookies";
+})
+.AddCookie("Cookies", options => {
+    options.LoginPath = "/Home/login"; // Si alguien intenta entrar sin permiso, lo manda aquí
+    options.Cookie.SameSite = SameSiteMode.Lax; 
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always; 
+});
 
-// --- EL CHISMOSO (Logs de Render) ---
+// =================================================================
+// --- LA LÍNEA SAGRADA --- (No mover de aquí)
+var app = builder.Build();
+// =================================================================
+
+
+// --- EL CHISMOSO (Para ver si Supabase conecta en los logs de Render) ---
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -42,48 +58,21 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// CONFIGURACIÓN DE GOOGLE - BLINDADA PARA RENDER
-builder.Services.AddAuthentication(options => {
-    options.DefaultScheme = "Cookies";
-    options.DefaultChallengeScheme = "Google";
-})
-.AddCookie("Cookies", options => {
-    options.Cookie.SameSite = SameSiteMode.Lax; 
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always; 
-})
-.AddGoogle("Google", options => {
-    // Falla rápida: Si no encuentra las credenciales, la app te avisará inmediatamente en los logs de Render
-    options.ClientId = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID") 
-        ?? throw new InvalidOperationException("Falta la variable de entorno GOOGLE_CLIENT_ID");
-    options.ClientSecret = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_SECRET") 
-        ?? throw new InvalidOperationException("Falta la variable de entorno GOOGLE_CLIENT_SECRET");
-    
-    // Mantenemos tu blindaje de redirección como capa extra de seguridad
-    options.Events.OnRedirectToAuthorizationEndpoint = context =>
-    {
-        var redirectUri = context.RedirectUri.Replace("http://", "https://");
-        context.Response.Redirect(redirectUri);
-        return Task.CompletedTask;
-    };
-});
+// =================================================================
+// 2. FASE DE MIDDLEWARE (EL ORDEN AQUÍ ES DE VIDA O MUERTE)
+// =================================================================
 
-var app = builder.Build();
-
-// 2. MIDDLEWARE (EL ORDEN AQUÍ ES DE VIDA O MUERTE PARA RENDER)
-
-// A. Configurar las opciones del Proxy
+// A. Configuración del Proxy (Para que Render entienda el tráfico)
 var forwardedHeadersOptions = new ForwardedHeadersOptions
 {
     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
 };
-// CRÍTICO: Limpiar las redes conocidas para que .NET acepte los encabezados del balanceador de Render
 forwardedHeadersOptions.KnownNetworks.Clear();
 forwardedHeadersOptions.KnownProxies.Clear();
 
-// B. ESTO DEBE SER LO PRIMERO EN EL PIPELINE
 app.UseForwardedHeaders(forwardedHeadersOptions);
 
-// C. Forzamos el esquema HTTPS como red de seguridad (ya no forzamos el Host para no romper los Health Checks de Render)
+// B. Forzar HTTPS
 app.Use((context, next) =>
 {
     context.Request.Scheme = "https";
@@ -93,13 +82,16 @@ app.Use((context, next) =>
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
-    app.UseHsts(); // Buena práctica de seguridad recomendada en producción
+    app.UseHsts();
 }
 
 app.UseStaticFiles();
 app.UseRouting();
 
-// El orden de estos dos no se puede cambiar
+// C. ¡EL SALVAVIDAS! (Activa la memoria de sesiones de tus compañeros)
+app.UseSession();
+
+// D. Activar Seguridad (Siempre después de UseRouting y UseSession)
 app.UseAuthentication(); 
 app.UseAuthorization();
 
