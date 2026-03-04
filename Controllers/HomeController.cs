@@ -190,36 +190,41 @@ namespace axcan.Controllers
         // =======================================================
         // LA API DEL CALENDARIO (AJAX DE AXEL)
         // =======================================================
-        [HttpGet]
-        public async Task<IActionResult> GetHorariosDisponibles(int idEmpresa, DateTime fecha)
+       [HttpGet]
+public async Task<IActionResult> GetHorariosDisponibles(int idEmpresa, DateTime fecha)
+{
+    int diaSemana = (int)fecha.DayOfWeek;
+    
+    var horarioDia = await _context.horarios_negocio
+        .FirstOrDefaultAsync(h => h.id_empresa == idEmpresa && h.dia_semana == diaSemana);
+
+    if (horarioDia == null || horarioDia.es_descanso)
+        return Json(new { disponibles = new List<string>(), mensaje = "Día de descanso" });
+
+    // Esto nos devuelve una lista de textos (Ej. ["10:30", "11:00"])
+    var citasOcupadas = await _context.citas
+        .Where(c => c.id_empresa == idEmpresa && c.fecha_cita.Date == fecha.Date)
+        .Select(c => c.hora_cita)
+        .ToListAsync();
+
+    var horasDisponibles = new List<string>();
+    var horaActual = horarioDia.hora_apertura;
+
+    while (horaActual < horarioDia.hora_cierre)
+    {
+        // ¡LA CURA! Convertimos el tiempo a texto PRIMERO
+        string horaFormateada = horaActual.ToString(@"hh\:mm");
+        
+        // Comparamos texto con texto
+        if (!citasOcupadas.Contains(horaFormateada))
         {
-            int diaSemana = (int)fecha.DayOfWeek;
-            
-            var horarioDia = await _context.horarios_negocio
-                .FirstOrDefaultAsync(h => h.id_empresa == idEmpresa && h.dia_semana == diaSemana);
-
-            if (horarioDia == null || horarioDia.es_descanso)
-                return Json(new { disponibles = new List<string>(), mensaje = "Día de descanso" });
-
-            var citasOcupadas = await _context.citas
-                .Where(c => c.id_empresa == idEmpresa && c.fecha_cita.Date == fecha.Date)
-                .Select(c => c.hora_cita)
-                .ToListAsync();
-
-            var horasDisponibles = new List<string>();
-            var horaActual = horarioDia.hora_apertura;
-
-            while (horaActual < horarioDia.hora_cierre)
-            {
-                if (!citasOcupadas.Contains(horaActual))
-                {
-                    horasDisponibles.Add(horaActual.ToString(@"hh\:mm"));
-                }
-                horaActual = horaActual.Add(TimeSpan.FromMinutes(30));
-            }
-
-            return Json(new { disponibles = horasDisponibles });
+            horasDisponibles.Add(horaFormateada);
         }
+        horaActual = horaActual.Add(TimeSpan.FromMinutes(30));
+    }
+
+    return Json(new { disponibles = horasDisponibles });
+}
 
         [HttpPost]
         public async Task<IActionResult> AgendarCita(Cita nuevaCita)
