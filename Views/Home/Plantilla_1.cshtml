@@ -1,35 +1,168 @@
 @model axcan.Models.Empresa
-@{ Layout = null; } <!DOCTYPE html>
-<html>
+@{
+    Layout = null; 
+    string colorTema = string.IsNullOrEmpty(Model.color_tema) ? "#111" : Model.color_tema;
+    string logo = string.IsNullOrEmpty(Model.logotipo_url) ? "https://ui-avatars.com/api/?name=" + Model.nombre_empresa : Model.logotipo_url;
+}
+<!DOCTYPE html>
+<html lang="es">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reservar en @Model.nombre_empresa</title>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        :root { --color-negocio: @Model.color_tema; }
-        .btn-reserva { background-color: var(--color-negocio); color: white; border-radius: 50px; }
-        .header-banner { 
-            background-image: url('@Model.banner_url'); 
-            height: 300px; background-size: cover; 
-        }
+        :root { --color-marca: @colorTema; }
+        body { background-color: #f8f9fa; }
+        .btn-marca { background-color: var(--color-marca); color: white; font-weight: bold; border-radius: 8px; }
+        .btn-marca:hover { filter: brightness(0.9); color: white; }
+        .chip-hora { border: 1px solid #dee2e6; border-radius: 20px; padding: 8px 15px; cursor: pointer; transition: 0.2s; display: inline-block; margin: 5px; background: white; }
+        .chip-hora:hover { border-color: var(--color-marca); }
+        .chip-hora.activa { background-color: var(--color-marca); color: white; border-color: var(--color-marca); }
+        .hero-header { background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('@Model.banner_url'); background-size: cover; background-position: center; padding: 60px 0; color: white; }
     </style>
 </head>
 <body>
-    <div class="header-banner d-flex align-items-center justify-content-center">
-        <img src="@Model.logotipo_url" width="120" class="rounded-circle shadow">
+
+    <div class="hero-header text-center">
+        <img src="@logo" class="rounded-circle border border-4 border-white mb-3" style="width: 120px; height: 120px; object-fit: cover;">
+        <h1 class="fw-bold">@Model.nombre_empresa</h1>
+        <p class="lead">@Model.descripcion</p>
     </div>
 
-    <div class="container mt-5 text-center">
-        <h1 class="fw-bold">@Model.nombre_empresa</h1>
-        <p class="text-muted">@Model.rubro</p>
+    <div class="container mt-5 mb-5">
+        <div class="row g-4">
+            
+            <div class="col-lg-5">
+                <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-scissors" style="color: var(--color-marca);"></i> 1. Elige tu Servicio</h5>
+                    <select id="select-servicio" class="form-select form-select-lg mb-4">
+                        <option value="">-- Selecciona un servicio --</option>
+                        @foreach(var s in ViewBag.Servicios) {
+                            <option value="@s.id_servicio" data-precio="@s.precio">@s.nombre_servicio - $@s.precio</option>
+                        }
+                    </select>
 
-        <hr>
-        
-        <div class="row justify-content-center">
-            <div class="col-md-8">
-                <h3 class="mb-4">Selecciona tu cita</h3>
-                @Html.Partial("_CalendarioReserva", Model)
+                    <h5 class="fw-bold mb-3"><i class="bi bi-person-badge" style="color: var(--color-marca);"></i> 2. ¿Quién te atenderá? (Opcional)</h5>
+                    <select id="select-personal" class="form-select form-select-lg">
+                        <option value="">Cualquiera disponible</option>
+                        @foreach(var p in ViewBag.Personal) {
+                            <option value="@p.id_secretario">@p.nombre</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="card border-0 shadow-sm rounded-4 p-4">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-geo-alt" style="color: var(--color-marca);"></i> Ubicación</h5>
+                    <div id="mapaCliente" style="height: 200px; border-radius: 10px;" class="border"></div>
+                </div>
+            </div>
+
+            <div class="col-lg-7">
+                <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
+                    <h5 class="fw-bold mb-4"><i class="bi bi-calendar-check" style="color: var(--color-marca);"></i> 3. Selecciona Fecha y Hora</h5>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <label class="form-label text-muted small fw-bold">Fecha de tu cita</label>
+                            <input type="date" id="input-fecha" class="form-control form-control-lg" min="@DateTime.Now.ToString("yyyy-MM-dd")">
+                        </div>
+                    </div>
+
+                    <div id="contenedor-horas" class="mb-4 p-4 bg-light rounded-4 text-center border border-dashed">
+                        <i class="bi bi-clock-history fs-1 text-muted"></i>
+                        <p class="text-muted mt-2 mb-0">Selecciona una fecha para ver los horarios disponibles.</p>
+                    </div>
+
+                    <div id="div-confirmacion" style="display: none;">
+                        <hr class="my-4">
+                        <h5 class="fw-bold mb-3">Tus Datos</h5>
+                        <input type="text" id="cliente-nombre" class="form-control mb-3" placeholder="Tu Nombre Completo" required>
+                        <input type="tel" id="cliente-telefono" class="form-control mb-3" placeholder="Tu Teléfono" required>
+                        <button id="btn-agendar" class="btn btn-marca w-100 py-3 fs-5">Confirmar Cita</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        let horaSeleccionada = null;
+        let idEmpresa = @Model.id_empresa;
+
+        // 1. CARGAR MAPA
+        var lat = @Model.ubicacion_lat != 0 ? @Model.ubicacion_lat : 19.4326; 
+        var lng = @Model.ubicacion_lng != 0 ? @Model.ubicacion_lng : -99.1332;
+        var map = L.map('mapaCliente').setView([lat, lng], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        L.marker([lat, lng]).addTo(map);
+
+        // 2. LÓGICA AJAX DEL CALENDARIO
+        document.getElementById('input-fecha').addEventListener('change', function() {
+            let fecha = this.value;
+            let contenedor = document.getElementById('contenedor-horas');
+            
+            contenedor.innerHTML = '<div class="spinner-border text-secondary" role="status"></div><p class="mt-2">Buscando horarios...</p>';
+            document.getElementById('div-confirmacion').style.display = 'none';
+            horaSeleccionada = null;
+
+            // Llamada silenciosa a tu C#
+            fetch(`/Home/GetHorariosDisponibles?idEmpresa=${idEmpresa}&fecha=${fecha}`)
+                .then(res => res.json())
+                .then(data => {
+                    contenedor.innerHTML = '';
+                    if(data.disponibles && data.disponibles.length > 0) {
+                        data.disponibles.forEach(hora => {
+                            let chip = document.createElement('span');
+                            chip.className = 'chip-hora fw-bold shadow-sm';
+                            chip.innerText = hora;
+                            chip.onclick = function() {
+                                document.querySelectorAll('.chip-hora').forEach(c => c.classList.remove('activa'));
+                                this.classList.add('activa');
+                                horaSeleccionada = this.innerText;
+                                document.getElementById('div-confirmacion').style.display = 'block';
+                            };
+                            contenedor.appendChild(chip);
+                        });
+                    } else {
+                        contenedor.innerHTML = `<p class="text-danger fw-bold m-0"><i class="bi bi-x-circle"></i> ${data.mensaje || 'No hay horarios disponibles para este día.'}</p>`;
+                    }
+                });
+        });
+
+        // 3. GUARDAR CITA (AJAX POST)
+        document.getElementById('btn-agendar').addEventListener('click', function() {
+            let servicio = document.getElementById('select-servicio').value;
+            let fecha = document.getElementById('input-fecha').value;
+            let nombre = document.getElementById('cliente-nombre').value;
+
+            if(!servicio || !horaSeleccionada || !nombre) {
+                alert("Por favor, completa todos los campos."); return;
+            }
+
+            this.disabled = true;
+            this.innerText = "Agendando...";
+
+            // Enviar datos al C# (AgendarCita)
+            let formData = new FormData();
+            formData.append('id_empresa', idEmpresa);
+            formData.append('id_servicio', servicio);
+            formData.append('fecha_cita', fecha);
+            formData.append('hora_cita', horaSeleccionada);
+            formData.append('notas', `Cliente: ${nombre} | Tel: ${document.getElementById('cliente-telefono').value}`);
+
+            fetch('/Home/AgendarCita', { method: 'POST', body: formData })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.success) {
+                        alert("¡Cita confirmada con éxito! Te esperamos.");
+                        window.location.href = '/'; // Regresa al buscador
+                    }
+                });
+        });
+    </script>
 </body>
 </html>

@@ -1,73 +1,128 @@
-﻿@model IEnumerable<axcan.Models.Empresa>
-@{
-    ViewData["Title"] = "Gestión de Citas";
+﻿@{
+    ViewData["Title"] = "AXCAN - Encuentra tu estilo";
 }
 
-<header class="hero-section py-5 text-center">
-    <div class="container py-5">
-        <h1 class="display-4 fw-bold mb-3 hero-title">
-            Encuentra y agenda tu <span>próxima cita</span>
-        </h1>
-        <p class="lead text-muted mb-5">
-            La plataforma que conecta tus servicios locales favoritos con tu agenda, en tiempo real.
-        </p>
-        <div class="row justify-content-center">
+<style>
+    :root { --gold-axcan: #D4AF37; --dark-axcan: #111; }
+    .hero-portal {
+        background: linear-gradient(rgba(17, 17, 17, 0.85), rgba(17, 17, 17, 0.95)), url('https://images.unsplash.com/photo-1585747860715-2ba37e788b70?q=80&w=2074&auto=format&fit=crop') center/cover;
+        padding: 100px 0 80px 0;
+        color: white;
+    }
+    .search-box {
+        background: white; padding: 10px; border-radius: 50px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    .btn-gold { background-color: var(--gold-axcan); color: #111; font-weight: bold; border-radius: 50px; padding: 12px 30px; transition: 0.3s; }
+    .btn-gold:hover { background-color: #bfa030; transform: translateY(-2px); }
+    
+    .category-bubble {
+        display: inline-block; padding: 10px 20px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+        color: white; border-radius: 50px; text-decoration: none; margin: 5px; transition: 0.3s;
+    }
+    .category-bubble:hover { background: var(--gold-axcan); color: #111; border-color: var(--gold-axcan); }
+
+    .card-negocio { border: none; border-radius: 15px; overflow: hidden; transition: all 0.3s ease; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+    .card-negocio:hover { transform: translateY(-10px); box-shadow: 0 15px 30px rgba(0,0,0,0.1); }
+    .card-banner { height: 120px; width: 100%; object-fit: cover; }
+    .card-logo { width: 80px; height: 80px; object-fit: cover; border-radius: 50%; border: 4px solid white; margin-top: -40px; background: white; }
+</style>
+
+<section class="hero-portal text-center">
+    <div class="container">
+        <h1 class="display-4 fw-bold mb-3">Encuentra y reserva con los mejores</h1>
+        <p class="lead mb-5 text-light">Barberías, Clínicas, Spas y Salones a un clic de distancia.</p>
+
+        <div class="row justify-content-center mb-5">
             <div class="col-md-8">
-                <div class="input-group input-group-lg shadow-sm rounded-pill overflow-hidden border">
-                    <span class="input-group-text bg-white border-0 ps-4">🔍</span>
-                    <input type="text" class="form-control border-0" placeholder="¿Qué servicio buscas?">
-                    <button class="btn btn-primary px-5 fw-bold">Buscar</button>
-                </div>
+                <form asp-action="Index" method="get" class="search-box d-flex align-items-center">
+                    <i class="bi bi-search ms-3 text-muted fs-5"></i>
+                    <input type="text" name="busqueda" class="form-control border-0 shadow-none bg-transparent ms-2" placeholder="Ej. Barbería El Padrino, Spa, Dental..." style="font-size: 1.1rem;">
+                    <button type="submit" class="btn btn-gold border-0">Buscar</button>
+                </form>
             </div>
         </div>
-    </div>
-</header>
 
-<div id="carruselBanners" class="carousel slide carousel-fade container mb-5" data-bs-ride="carousel">
-    <div class="carousel-inner shadow-sm rounded-4">
-        <div class="carousel-item active"><img src="~/imagenesaxcan/prueba1.jpg" class="d-block w-100 banner-img"></div>
-        <div class="carousel-item"><img src="~/imagenesaxcan/prueba2.jpg" class="d-block w-100 banner-img"></div>
-        <div class="carousel-item"><img src="~/imagenesaxcan/prueba3.jpg" class="d-block w-100 banner-img"></div>
+        <div class="d-flex justify-content-center flex-wrap">
+            <a href="/Home/Index?busqueda=barberia" class="category-bubble"><i class="bi bi-scissors me-2"></i>Barberías</a>
+            <a href="/Home/Index?busqueda=spa" class="category-bubble"><i class="bi bi-flower1 me-2"></i>Spas</a>
+            <a href="/Home/Index?busqueda=clinica" class="category-bubble"><i class="bi bi-heart-pulse me-2"></i>Clínicas</a>
+            <a href="/Home/Index?busqueda=salon" class="category-bubble"><i class="bi bi-person-hearts me-2"></i>Salones de Belleza</a>
+        </div>
     </div>
-</div>
+</section>
 
-<section class="py-5 bg-light">
-    <div class="container">
-        <h3 class="fw-bold mb-4 text-center">Negocios destacados en tu zona</h3>
-        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4">
-            @if (Model != null && Model.Any())
+<section class="container py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-bold m-0">Negocios Destacados</h3>
+        @if (!string.IsNullOrEmpty(Context.Request.Query["busqueda"]))
+        {
+            <a href="/Home/Index" class="text-muted text-decoration-none"><i class="bi bi-x-circle me-1"></i>Limpiar búsqueda</a>
+        }
+    </div>
+
+    <div class="row g-4">
+        @if (ViewBag.EmpresasDestacadas != null && ViewBag.EmpresasDestacadas.Count > 0)
+        {
+            foreach (var item in ViewBag.EmpresasDestacadas)
             {
-                @foreach (var empresa in Model)
-                {
-                    <div class="col">
-                        <div class="card h-100 shadow-sm border-0 card-negocio">
-                            <img src="@(string.IsNullOrEmpty(empresa.logotipo_url) ? "/imagenesaxcan/prueba1.jpg" : empresa.logotipo_url)" class="card-img-top banner-card rounded-top" alt="Negocio">
-                            <div class="card-body">
-                                <span class="badge bg-primary mb-2">@empresa.rubro</span>
-                                <h5 class="card-title fw-bold">@empresa.nombre_empresa</h5>
-                                <p class="text-muted small"><i class="bi bi-geo-alt"></i> Ubicado en el Mapa</p>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <button class="btn btn-outline-dark btn-sm rounded-pill">Agendar</button>
-                                    <span class="text-warning fw-bold small"><i class="bi bi-star-fill"></i> 4.8</span>
+                var empresa = item.Empresa;
+                string urlNegocio = empresa.nombre_empresa.Replace(" ", "-").ToLower();
+                string logo = string.IsNullOrEmpty(empresa.logotipo_url) ? "https://ui-avatars.com/api/?name=" + empresa.nombre_empresa + "&background=111&color=D4AF37" : empresa.logotipo_url;
+                string banner = string.IsNullOrEmpty(empresa.banner_url) ? "https://images.unsplash.com/photo-1522337660859-02fbefca4702?q=80&w=800&auto=format&fit=crop" : empresa.banner_url;
+
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="card card-negocio h-100">
+                        <div style="height: 120px; background: url('@banner') center/cover; position: relative;">
+                            <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.3);"></div>
+                        </div>
+                        
+                        <div class="card-body text-center pt-0 position-relative">
+                            <img src="@logo" alt="Logo @empresa.nombre_empresa" class="card-logo shadow-sm mb-3">
+                            
+                            <h5 class="fw-bold mb-1 text-dark">@empresa.nombre_empresa</h5>
+                            <span class="badge bg-light text-dark border mb-3 px-3 py-2 rounded-pill">@empresa.rubro</span>
+                            
+                            <div class="mb-4">
+                                @{
+                                    double promedio = item.PromedioEstrellas;
+                                    int estrellasCompletas = (int)Math.Floor(promedio);
+                                    bool mediaEstrella = (promedio - estrellasCompletas) >= 0.5;
+                                }
+                                <div class="text-warning fs-5">
+                                    <span class="text-dark fw-bold me-1">@promedio</span>
+                                    @for(int i = 0; i < 5; i++)
+                                    {
+                                        if (i < estrellasCompletas) { <i class="bi bi-star-fill"></i> }
+                                        else if (i == estrellasCompletas && mediaEstrella) { <i class="bi bi-star-half"></i> }
+                                        else { <i class="bi bi-star text-muted" style="opacity: 0.3;"></i> }
+                                    }
                                 </div>
+                                <small class="text-muted">(@item.TotalResenas reseñas verificadas)</small>
                             </div>
+
+                            <a href="/reservar/@urlNegocio" class="btn w-100 fw-bold rounded-pill text-uppercase" style="background-color: var(--dark-axcan); color: var(--gold-axcan); letter-spacing: 1px; padding: 12px;">
+                                <i class="bi bi-calendar-check me-2"></i> Agendar Cita
+                            </a>
                         </div>
                     </div>
-                }
-            }
-            else
-            {
-                <div class="col-12 text-center py-5">
-                    <p class="text-muted">No hay negocios registrados todavía.</p>
                 </div>
             }
-        </div>
+        }
+        else
+        {
+            <div class="col-12 text-center py-5">
+                <i class="bi bi-search text-muted" style="font-size: 4rem; opacity: 0.5;"></i>
+                <h3 class="mt-3 fw-bold text-dark">No encontramos resultados</h3>
+                <p class="text-muted">Intenta buscar con otras palabras o navega por nuestras categorías.</p>
+                <a href="/Home/Index" class="btn btn-dark rounded-pill mt-2">Ver todos los negocios</a>
+            </div>
+        }
     </div>
 </section>
 
-            }
-        </div>
+<footer class="bg-dark text-white text-center py-4 mt-5">
+    <div class="container">
+        <h4 class="fw-bold" style="color: var(--gold-axcan); letter-spacing: 2px;">AXCAN</h4>
+        <p class="text-muted small mb-0">© @DateTime.Now.Year AXCAN. Todos los derechos reservados.</p>
     </div>
-</section>
-
-@* ... Mantén la sección de los 3 iconos (Agenda, Tiempo Real, Localización) aquí abajo ... *@
+</footer>

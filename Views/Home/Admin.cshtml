@@ -1,376 +1,283 @@
-@{ Layout = null; }
+@model axcan.Models.Empresa
+@{
+    Layout = null;
+    string rolActual = ViewBag.RolLocal as string ?? "administrador";
+}
 <!DOCTYPE html>
-<html lang="es" data-bs-theme="light">
+<html lang="es" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AXCAN | Panel de Administración</title>
+    <title>AXCAN | Panel Premium</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
     <style>
-        :root { --sidebar-width: 260px; --gold-axcan: #D4AF37; }
-        body { background-color: var(--bs-body-bg); transition: all 0.3s ease; }
-        
-        /* Sidebar Design */
-        .sidebar { 
-            width: var(--sidebar-width); 
-            height: 100vh; 
-            position: fixed; 
-            top: 0; left: 0; 
-            z-index: 1000;
-            background: #111;
-            transition: all 0.3s;
+        :root { 
+            --sidebar-width: 260px; 
+            --gold-axcan: #D4AF37; 
+            --dark-axcan: #1a1a1a;
+            --gray-axcan: #2d2d2d;
         }
+        body { background-color: #0f0f0f; color: #fff; transition: all 0.3s ease; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         
-        .main-content { margin-left: var(--sidebar-width); padding: 25px; transition: all 0.3s; }
-        
-        .nav-link { color: #aaa; margin: 8px 15px; border-radius: 10px; padding: 12px; }
-        .nav-link:hover, .nav-link.active { background: var(--gold-axcan); color: #000 !important; font-weight: bold; }
+        /* SIDEBAR PREMIUM */
+        .sidebar { width: var(--sidebar-width); height: 100vh; position: fixed; top: 0; left: 0; z-index: 1000; background: var(--dark-axcan); border-right: 1px solid #333; }
+        .main-content { margin-left: var(--sidebar-width); padding: 30px; }
+        .nav-link { color: #888; margin: 8px 15px; border-radius: 8px; padding: 12px; transition: 0.2s; }
+        .nav-link:hover, .nav-link.active { background: rgba(212, 175, 55, 0.1); color: var(--gold-axcan) !important; font-weight: bold; border-left: 3px solid var(--gold-axcan); }
 
-        /* Mobile Adjustments */
-        @@media (max-width: 992px) {
-            .sidebar { left: -100%; }
-            .sidebar.active { left: 0; }
-            .main-content { margin-left: 0; }
-        }
+        /* COMPONENTES AXCAN */
+        .card-custom { background-color: var(--gray-axcan); border: 1px solid #333; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .axcan-input { background-color: #111; border: 1px solid #444; color: white; border-radius: 8px; padding: 10px; }
+        .axcan-input:focus { border-color: var(--gold-axcan); box-shadow: 0 0 0 0.2rem rgba(212, 175, 55, 0.2); background-color: #1a1a1a; color: white; }
+        .btn-gold { background-color: var(--gold-axcan); color: #000; font-weight: bold; border: none; border-radius: 8px; }
+        .btn-gold:hover { background-color: #bfa030; transform: translateY(-2px); }
 
-        .card-custom { border: none; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); transition: 0.3s; }
-        .card-custom:hover { transform: translateY(-5px); }
-        .logo-admin { max-width: 130px; filter: brightness(0) invert(1); }
-        
-        /* Dark/Light Switch */
-        .theme-toggler { cursor: pointer; font-size: 1.5rem; color: var(--gold-axcan); }
+        /* TARJETAS DE PLANTILLA */
+        .template-card { border: 2px solid #444; border-radius: 12px; cursor: pointer; transition: all 0.3s; background: #111; text-align: center; padding: 15px; }
+        .template-radio:checked + .template-card { border-color: var(--gold-axcan); background: rgba(212, 175, 55, 0.05); }
+        .template-radio:checked + .template-card h6 { color: var(--gold-axcan) !important; }
+
+        .admin-section { display: none; }
+        .admin-section.active { display: flex; animation: fadeIn 0.4s; }
+        @@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
     <nav class="sidebar shadow" id="sidebar">
-        <div class="p-4 text-center">
-            <img src="/imagenesaxcan/logo_axcan.png" alt="AXCAN" class="logo-admin mb-3">
-            <div class="text-white-50 small">MODO ADMINISTRADOR</div>
+        <div class="p-4 text-center border-bottom border-secondary">
+            <h3 class="fw-bold mb-1" style="color: var(--gold-axcan); letter-spacing: 2px;">AXCAN</h3>
+            <span class="badge bg-dark border border-warning text-warning rounded-pill">@rolActual.ToUpper()</span>
         </div>
         
- <div class="nav flex-column mt-3">
-    <a href="#stats" class="nav-link active"><i class="bi bi-graph-up-arrow me-2"></i> Dashboard</a>
-    
-    <a href="#calendario" class="nav-link"><i class="bi bi-calendar-month me-2"></i> Gestionar Citas</a>
-    
-    <a href="#servicios" class="nav-link"><i class="bi bi-layers me-2"></i> Servicios</a>
-    
-    <a href="#personal" class="nav-link"><i class="bi bi-people me-2"></i> Personal</a>
-    
-    <a href="#clientes" class="nav-link"><i class="bi bi-person-search me-2"></i> Usuarios</a>
-    
-    <hr class="text-secondary mx-3">
-    <a asp-action="Index" class="nav-link text-info"><i class="bi bi-arrow-left-circle me-2"></i> Volver a Web</a>
-</div>
+        <div class="nav flex-column mt-4">
+            @if(rolActual == "administrador") {
+                <a href="#stats" class="nav-link active"><i class="bi bi-graph-up-arrow me-2"></i> Dashboard</a>
+                <a href="#personal" class="nav-link"><i class="bi bi-people me-2"></i> Personal</a>
+                <a href="#servicios" class="nav-link"><i class="bi bi-scissors me-2"></i> Catálogo / Servicios</a>
+                <a href="#horarios" class="nav-link"><i class="bi bi-clock me-2"></i> Horarios Negocio</a>
+                <a href="#configuracion" class="nav-link"><i class="bi bi-palette me-2"></i> Personalizar Portal</a>
+            } else {
+                <a href="#calendario-secretario" class="nav-link active"><i class="bi bi-calendar-month me-2"></i> Gestión de Citas</a>
+            }
+            <hr class="text-secondary mx-3 my-4">
+            <a asp-action="Index" class="nav-link text-info"><i class="bi bi-house me-2"></i> Ir al Buscador</a>
+            <a asp-action="Logout" class="nav-link text-danger"><i class="bi bi-box-arrow-left me-2"></i> Cerrar Sesión</a>
+        </div>
     </nav>
 
-    <main class="main-content" id="main-content">
-        
-        <header class="d-flex justify-content-between align-items-center mb-4">
-            <div class="d-flex align-items-center">
-                <button class="btn btn-dark d-lg-none me-3" onclick="toggleMenu()"><i class="bi bi-list"></i></button>
-                <h3 class="fw-bold mb-0">Panel Axcan</h3>
-            </div>
-            <div class="d-flex align-items-center gap-3">
-                <div class="theme-toggler" onclick="toggleTheme()">
-                    <i id="theme-icon" class="bi bi-moon-stars-fill"></i>
-                </div>
-            
-                    </button>
-            
-            </div>
+    <main class="main-content">
+        <header class="d-flex justify-content-between align-items-center mb-5">
+            <h4 class="fw-bold m-0 text-white">Panel de Control <span style="color: var(--gold-axcan);">@Model.nombre_empresa</span></h4>
         </header>
 
-        <div class="row g-4 mb-4">
-            <div class="col-12 col-md-6 col-lg-3">
-                <div class="card card-custom p-4 bg-white text-dark">
-                    <div class="text-muted small fw-bold">CITAS TOTALES</div>
-                    <h2 class="fw-bold">1,250</h2>
-                    <span class="text-success small fw-bold">+12% este mes</span>
+        @if(rolActual == "administrador")
+        {
+            <div class="row g-4 admin-section active" id="stats">
+                <div class="col-md-4">
+                    <div class="card card-custom p-4 text-center">
+                        <h6 class="text-muted fw-bold">CITAS DEL MES</h6>
+                        <h1 class="fw-bold" style="color: var(--gold-axcan);">124</h1>
+                    </div>
                 </div>
             </div>
-            <div class="card card-custom p-4 shadow-sm border-0">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h5 class="fw-bold mb-0">Gestión de Equipo</h5>
-        <button class="btn btn-dark btn-sm rounded-pill" data-bs-toggle="modal" data-bs-target="#modalAddEquipo">
-            + Vincular Usuario
-        </button>
-    </div>
 
-    <div class="table-responsive">
-        <table class="table table-hover align-middle">
-            <thead class="table-light small">
-                <tr>
-                    <th>Nombre / Usuario</th>
-                    <th>Subrol</th>
-                    <th>Acceso</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                @* Aquí harías un @foreach (var p in Model.Personal) *@
-                <tr>
-                    <td><strong>Carlos Ruiz</strong><br><small class="text-muted">@@carlos_barbero</small></td>
-                    <td><span class="badge bg-info text-dark">Prestador</span></td>
-                    <td><small>Citas + Estadísticas personales</small></td>
-                    <td><button class="btn btn-sm btn-outline-danger">Eliminar</button></td>
-                </tr>
-                <tr>
-                    <td><strong>Sofía López</strong><br><small class="text-muted">@@sofi_agenda</small></td>
-                    <td><span class="badge bg-secondary">Secretario</span></td>
-                    <td><small>Agenda total + Clientes</small></td>
-                    <td><button class="btn btn-sm btn-outline-danger">Eliminar</button></td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-</div>
-            </div>
-            <div class="col-12 col-md-6 col-lg-3">
-               <div class="card card-custom p-4 shadow-sm border-0 rounded-4 mt-4">
-    <h5 class="fw-bold mb-3"><i class="bi bi-clock-history text-primary"></i> Horarios de Atención</h5>
-    <p class="small text-muted">Configura tus horas de apertura y cierre para que tus clientes sepan cuándo agendar.</p>
-    
-    <table class="table table-borderless align-middle">
-        <thead>
-            <tr class="small text-muted">
-                <th>Día</th>
-                <th>Apertura</th>
-                <th>Cierre</th>
-                <th>¿Descanso?</th>
-            </tr>
-        </thead>
-        <tbody>
-            @{
-                string[] dias = { "Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado" };
-                for (int i = 0; i < 7; i++)
-                {
-                    <tr>
-                        <td class="fw-bold">@dias[i]</td>
-                        <td><input type="time" name="apertura_@i" class="form-control form-control-sm" value="09:00"></td>
-                        <td><input type="time" name="cierre_@i" class="form-control form-control-sm" value="18:00"></td>
-                        <td>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" name="descanso_@i">
+            <div class="row g-4 admin-section" id="configuracion">
+                <div class="col-12">
+                    <div class="card card-custom border-0 p-5 rounded-4">
+                        <h4 class="fw-bold mb-4" style="color: var(--gold-axcan);"><i class="bi bi-brush"></i> Personaliza tu Página Pública</h4>
+                        <form asp-action="EditarNegocio" method="post" enctype="multipart/form-data">
+                            <input type="hidden" asp-for="id_empresa" />
+                            
+                            <div class="row g-5">
+                                <div class="col-lg-6">
+                                    <div class="mb-4">
+                                        <label class="form-label text-muted small fw-bold">Nombre del Negocio</label>
+                                        <input type="text" asp-for="nombre_empresa" class="form-control axcan-input">
+                                    </div>
+                                    <div class="mb-4">
+                                        <label class="form-label text-muted small fw-bold">Nuestra Historia / Quiénes Somos</label>
+                                        <textarea asp-for="descripcion" class="form-control axcan-input" rows="4" placeholder="Atendiendo desde 1990..."></textarea>
+                                    </div>
+                                    <div class="mb-4">
+                                        <label class="form-label text-muted small fw-bold">Color Principal de la Marca</label>
+                                        <input type="color" asp-for="color_tema" class="form-control form-control-color w-100 axcan-input" style="height: 50px;">
+                                    </div>
+                                    <div class="mb-4">
+                                        <label class="form-label text-muted small fw-bold">Sube tu Logotipo</label>
+                                        <input type="file" name="logoArchivo" class="form-control axcan-input">
+                                    </div>
+                                </div>
+
+                                <div class="col-lg-6">
+                                    <label class="form-label text-muted small fw-bold mb-3">Elige la Plantilla Estructural</label>
+                                    <div class="row g-3 mb-4">
+                                        <div class="col-6">
+                                            <input type="radio" asp-for="id_plantilla" value="1" class="d-none template-radio" id="p1">
+                                            <label class="template-card w-100" for="p1">
+                                                <i class="bi bi-layout-sidebar text-muted fs-1 mb-2"></i>
+                                                <h6 class="text-white fw-bold m-0">Diseño Clásico</h6>
+                                                <small class="text-muted">Calendario a la Izquierda</small>
+                                            </label>
+                                        </div>
+                                        <div class="col-6">
+                                            <input type="radio" asp-for="id_plantilla" value="2" class="d-none template-radio" id="p2">
+                                            <label class="template-card w-100" for="p2">
+                                                <i class="bi bi-layout-text-window text-muted fs-1 mb-2"></i>
+                                                <h6 class="text-white fw-bold m-0">Diseño Moderno</h6>
+                                                <small class="text-muted">Calendario Centrado</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-4">
+                                        <label class="form-label text-muted small fw-bold">Ubicación GPS</label>
+                                        <div id="mapaAdmin" style="height: 200px; border-radius: 10px;" class="border border-secondary"></div>
+                                        <input type="hidden" id="lat" asp-for="ubicacion_lat">
+                                        <input type="hidden" id="lng" asp-for="ubicacion_lng">
+                                    </div>
+                                </div>
                             </div>
-                        </td>
-                    </tr>
-                }
-            }
-        </tbody>
-    </table>
-    <button class="btn btn-primary w-100 fw-bold mt-2">Actualizar Horario Semanal</button>
-</div>
-                    <div class="text-muted small fw-bold">SERVICIOS</div>
-                    <h2 class="fw-bold">15</h2>
-                    <span class="text-warning small fw-bold text-uppercase">Configurados</span>
+                            
+                            <hr class="border-secondary my-4">
+                            <button type="submit" class="btn btn-gold w-100 py-3 fs-5">Guardar Cambios y Publicar</button>
+                        </form>
+                    </div>
                 </div>
             </div>
-            <div class="col-12 col-md-6 col-lg-3">
-                <div class="card card-custom p-4 bg-white text-dark">
-                    <div class="text-muted small fw-bold">PROMEDIO CITAS</div>
-                    <h2 class="fw-bold">4.8</h2>
-                    <div class="text-warning"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-half"></i></div>
-                </div>
-            </div>
-        </div>
 
-        <div class="row g-4">
+            <div class="row g-4 admin-section" id="horarios">
+                <div class="col-12">
+                    <div class="card card-custom p-5">
+                        <h4 class="fw-bold mb-4" style="color: var(--gold-axcan);"><i class="bi bi-clock"></i> Horarios de Operación</h4>
+                        <form asp-action="GuardarHorarios" method="post">
+                            <input type="hidden" name="id_empresa" value="@Model.id_empresa" />
+                            <table class="table table-dark table-borderless align-middle">
+                                <thead>
+                                    <tr class="text-muted small"><th>Día</th><th>Apertura</th><th>Cierre</th><th>¿Descanso?</th></tr>
+                                </thead>
+                                <tbody>
+                                    @{ string[] dias = { "Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado" }; }
+                                    @for (int i = 0; i < 7; i++)
+                                    {
+                                        <tr>
+                                            <td class="fw-bold">@dias[i]</td>
+                                            <td><input type="time" name="apertura_@i" class="form-control axcan-input w-75" value="09:00"></td>
+                                            <td><input type="time" name="cierre_@i" class="form-control axcan-input w-75" value="18:00"></td>
+                                            <td><div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="descanso_@i"></div></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                            <button type="submit" class="btn btn-gold w-100 mt-3">Guardar Calendario Base</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4 admin-section" id="servicios">
+                <div class="col-12">
+                    <div class="card card-custom p-5">
+                        <div class="d-flex justify-content-between mb-4">
+                            <h4 class="fw-bold m-0" style="color: var(--gold-axcan);">Catálogo de Servicios</h4>
+                            <button class="btn btn-gold" data-bs-toggle="modal" data-bs-target="#modalAddServicio">+ Nuevo</button>
+                        </div>
+                        <ul class="list-group list-group-flush bg-transparent">
+                            @if(ViewBag.Servicios != null) {
+                                foreach(var s in ViewBag.Servicios) {
+                                    <li class="list-group-item bg-transparent text-white border-secondary d-flex justify-content-between align-items-center p-3">
+                                        <div><strong>@s.nombre_servicio</strong> <br> <small class="text-muted">@s.duracion_minutos minutos</small></div>
+                                        <span class="fs-5 fw-bold" style="color: var(--gold-axcan);">$@s.precio</span>
+                                    </li>
+                                }
+                            }
+                        </ul>
+                    </div>
+                </div>
+            </div>
             
-            <div class="col-12 col-xl-8">
-                <div class="card card-custom p-4">
-                    <h5 class="fw-bold mb-4"><i class="bi bi-trophy me-2 text-warning"></i>Usuarios con más Citas</h5>
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle">
-                            <thead class="table-light text-uppercase small">
-                                <tr>
-                                    <th>Usuario</th>
-                                    <th>Citas</th>
-                                    <th>Estatus</th>
-                                    <th>Acción</th>
-                                </tr>
-                            </thead>
+            <div class="row g-4 admin-section" id="personal">
+                <div class="col-12">
+                    <div class="card card-custom p-5">
+                        <div class="d-flex justify-content-between mb-4">
+                            <h4 class="fw-bold m-0" style="color: var(--gold-axcan);">Gestión de Equipo</h4>
+                            <button class="btn btn-gold" data-bs-toggle="modal" data-bs-target="#modalAddEquipo">+ Vincular Usuario</button>
+                        </div>
+                        <table class="table table-dark table-hover align-middle bg-transparent">
                             <tbody>
-                                <tr>
-                                    <td><strong>Juan Pérez</strong><br><small class="text-muted">juan@@mail.com</small></td>
-                                    <td><span class="badge bg-dark rounded-pill">32 agendadas</span></td>
-                                    <td><span class="text-success">● VIP</span></td>
-                                    <td><button class="btn btn-sm btn-outline-dark">Gestionar</button></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>María García</strong><br><small class="text-muted">maria@@mail.com</small></td>
-                                    <td><span class="badge bg-dark rounded-pill">15 agendadas</span></td>
-                                    <td><span class="text-primary">● Frecuente</span></td>
-                                    <td><button class="btn btn-sm btn-outline-dark">Gestionar</button></td>
-                                </tr>
-                                <tr>
-                                    <td><strong>Katto Jara</strong><br><small class="text-muted">admin@@axcan.com</small></td>
-                                    <td><span class="badge bg-dark rounded-pill">12 agendadas</span></td>
-                                    <td><span class="text-warning">● Premium</span></td>
-                                    <td><button class="btn btn-sm btn-outline-dark">Gestionar</button></td>
-                                </tr>
+                                @if(ViewBag.Personal != null) {
+                                    foreach(var p in ViewBag.Personal) {
+                                        <tr>
+                                            <td><strong>@p.nombre</strong><br><small class="text-muted">@@@p.username</small></td>
+                                            <td><span class="badge bg-secondary border border-warning text-warning">@p.subrol.ToUpper()</span></td>
+                                            <td class="text-end"><button class="btn btn-sm btn-outline-danger">Remover</button></td>
+                                        </tr>
+                                    }
+                                }
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
-            
-@model axcan.Models.Empresa
-@{ Layout = "_Layout"; }
-
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-lg-4 mb-4">
-            <div class="card shadow-sm border-0 p-4 rounded-4">
-                <h5 class="fw-bold mb-3">Personalizar Card</h5>
-                <form asp-action="EditarNegocio" method="post" enctype="multipart/form-data">
-                    <input type="hidden" asp-for="id_empresa" />
-                    
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">Nombre del Negocio</label>
-                        <input type="text" asp-for="nombre_empresa" class="form-control">
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">Mover Ubicación (GPS)</label>
-                        <div id="mapaAdmin" style="height: 200px; border-radius: 10px;" class="border"></div>
-                        <input type="hidden" id="lat" asp-for="ubicacion_lat">
-                        <input type="hidden" id="lng" asp-for="ubicacion_lng">
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">Logo Nuevo</label>
-                        <input type="file" name="logoArchivo" class="form-control form-control-sm">
-                    </div>
-
-                    <button type="submit" class="btn btn-primary w-100 fw-bold">Guardar Cambios</button>
-                </form>
-            </div>
-        </div>
-
-        <div class="col-lg-8">
-            <div class="card shadow-sm border-0 p-4 rounded-4">
-                <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
-                    <li class="nav-item">
-                        <button class="nav-link active rounded-pill" data-bs-toggle="pill" data-bs-target="#mensual">Mensual</button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link rounded-pill" data-bs-toggle="pill" data-bs-target="#semanal">Semanal</button>
-                    </li>
-                </ul>
-
-                <div class="tab-content">
-                    <div class="tab-pane fade show active" id="mensual">
-                        <div class="calendario-mensual-container">
-                            @* Aquí va la lógica de celdas que Axel hizo a mano *@
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h4 class="fw-bold mb-0">Marzo 2026</h4>
-                                <div><button class="btn btn-sm btn-light border"> < </button> <button class="btn btn-sm btn-light border"> > </button></div>
-                            </div>
-                            <table class="table table-bordered text-center">
-                                <thead class="bg-light">
-                                    <tr>
-                                        <th>Lun</th><th>Mar</th><th>Mié</th><th>Jue</th><th>Vie</th><th>Sáb</th><th>Dom</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @* Generación manual de días *@
-                                    <tr>
-                                        <td></td><td></td><td></td><td>1</td><td>2</td><td>3</td><td>4</td>
-                                    </tr>
-                                    @* ... resto de la cuadrícula de Axel ... *@
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <div class="tab-pane fade" id="semanal">
-                        <div class="calendario-semanal-timeline">
-                            <div class="row g-0 border-top">
-                                <div class="col-2 border-end py-3 text-center bg-light fw-bold">Hora</div>
-                                <div class="col border-end py-3 text-center fw-bold">Lunes 02</div>
-                                <div class="col border-end py-3 text-center fw-bold">Martes 03</div>
-                                @* ... Columnas de Axel ... *@
-                            </div>
-                            <div class="row g-0 border-top">
-                                <div class="col-2 border-end py-2 text-center small text-muted">09:00 AM</div>
-                                <div class="col border-end bg-primary-subtle p-1"><small>Cita: Juan</small></div>
-                                <div class="col border-end"></div>
-                                @* ... Filas de tiempo de Axel ... *@
-                            </div>
-                        </div>
+        }
+        else 
+        {
+            <div class="row admin-section active" id="calendario-secretario">
+                <div class="col-12">
+                    <div class="card card-custom p-4 text-center">
+                        <h4 class="fw-bold" style="color: var(--gold-axcan);">Agenda en Vivo</h4>
+                        <p class="text-muted">Las citas de hoy</p>
+                        @if(ViewBag.Citas != null) {
+                            foreach(var c in ViewBag.Citas) {
+                                <div class="p-3 mb-2 border border-secondary rounded text-start" style="background: #111; border-left: 4px solid var(--gold-axcan) !important;">
+                                    <h6 class="fw-bold mb-1">Cita a las @c.hora_cita</h6>
+                                    <small class="text-muted">Estatus: @c.estatus</small>
+                                </div>
+                            }
+                        }
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-</div>
+        }
+    </main>
 
-@section Scripts {
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script>
-        var lat = @Model.ubicacion_lat;
-        var lng = @Model.ubicacion_lng;
-        var map = L.map('mapaAdmin').setView([lat, lng], 15);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-        var marker = L.marker([lat, lng], { draggable: true }).addTo(map);
-
-        marker.on('dragend', function (e) {
-            document.getElementById('lat').value = e.target.getLatLng().lat;
-            document.getElementById('lng').value = e.target.getLatLng().lng;
-        });
-    </script>
-}
-            <div class="col-12 col-xl-4">
-                <div class="card card-custom p-4 h-100">
-                    <h5 class="fw-bold mb-3">Gestión de Servicios</h5>
-                    <div class="list-group list-group-flush mb-3">
-                        <div class="list-group-item d-flex justify-content-between p-3 border-0 bg-light rounded-4 mb-2">
-                            <span>Corte Clásico</span>
-                            <span class="fw-bold">$250</span>
-                        </div>
-                        <div class="list-group-item d-flex justify-content-between p-3 border-0 bg-light rounded-4 mb-2">
-                            <span>Barba y Ritual</span>
-                            <span class="fw-bold">$180</span>
-                        </div>
-                        <div class="list-group-item d-flex justify-content-between p-3 border-0 bg-light rounded-4 mb-2">
-                            <span>Tinte Axcan</span>
-                            <span class="fw-bold">$450</span>
-                        </div>
-                    </div>
-                    <button class="btn btn-dark w-100 py-3 rounded-4 mt-auto">
-                        <i class="bi bi-pencil-square me-2"></i>Editar Catálogo
-                    </button>
-                </div>
-            </div>
-
-        </div> </main>
+    <div class="modal fade" id="modalAddServicio" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content bg-dark text-white border-warning"><form asp-action="GuardarServicio" method="post"><div class="modal-body"><input type="hidden" name="id_empresa" value="@Model.id_empresa" /><input type="hidden" name="activo" value="true" /><h5 class="text-warning mb-3">Nuevo Servicio</h5><input type="text" name="nombre_servicio" class="form-control axcan-input mb-3" placeholder="Nombre"><input type="number" step="0.01" name="precio" class="form-control axcan-input mb-3" placeholder="Precio $"><input type="number" name="duracion_minutos" class="form-control axcan-input mb-3" placeholder="Minutos"><button class="btn btn-gold w-100">Guardar</button></div></form></div></div></div>
+    
+    <div class="modal fade" id="modalAddEquipo" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content bg-dark text-white border-warning"><form asp-action="AgregarPersonal" method="post"><div class="modal-body"><input type="hidden" name="idEmpresa" value="@Model.id_empresa" /><h5 class="text-warning mb-3">Vincular Staff</h5><input type="text" name="usernameBusqueda" class="form-control axcan-input mb-3" placeholder="Username de Axcan"><select name="subrol" class="form-select axcan-input mb-3"><option value="prestador">Prestador</option><option value="secretario">Secretario</option></select><button class="btn btn-gold w-100">Vincular</button></div></form></div></div></div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // Toggle Sidebar en Celular
-        function toggleMenu() {
-            document.getElementById('sidebar').classList.toggle('active');
-        }
+        // 1. NAVEGACIÓN SPA (Cambio de Pestañas sin Recargar)
+        document.querySelectorAll('.sidebar .nav-link[href^="#"]').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+                document.querySelectorAll('.admin-section').forEach(sec => sec.classList.remove('active'));
+                document.getElementById(this.getAttribute('href').substring(1)).classList.add('active');
+            });
+        });
 
-        // Cambio de Color (Blanco / Negro)
-        function toggleTheme() {
-            const html = document.documentElement;
-            const icon = document.getElementById('theme-icon');
-            
-            if (html.getAttribute('data-bs-theme') === 'light') {
-                html.setAttribute('data-bs-theme', 'dark');
-                icon.className = 'bi bi-sun-fill';
-            } else {
-                html.setAttribute('data-bs-theme', 'light');
-                icon.className = 'bi bi-moon-stars-fill';
+        // 2. MAPA GPS
+        document.addEventListener("DOMContentLoaded", function() {
+            var mapContainer = document.getElementById('mapaAdmin');
+            if (mapContainer) {
+                var lat = @Model.ubicacion_lat != 0 ? @Model.ubicacion_lat : 19.4326; 
+                var lng = @Model.ubicacion_lng != 0 ? @Model.ubicacion_lng : -99.1332;
+                var map = L.map('mapaAdmin').setView([lat, lng], 15);
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map); // Mapa modo oscuro
+                var marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+                marker.on('dragend', function (e) {
+                    document.getElementById('lat').value = e.target.getLatLng().lat;
+                    document.getElementById('lng').value = e.target.getLatLng().lng;
+                });
             }
-        }
+        });
     </script>
 </body>
 </html>

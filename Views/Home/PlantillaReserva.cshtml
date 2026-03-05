@@ -1,0 +1,230 @@
+@model axcan.Models.Empresa
+@{
+    Layout = null; // Independiente del Admin
+}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reservar en @Model.nombre_empresa</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <style>
+        /* DESIGN TOKENS (Tu Guía de Estilos) */
+        :root {
+            --primary-dark: #1a2a3a;
+            --primary-lavender: #85a3e0;
+            --primary-info: #4db8ff;
+            --bg-body: #f8fafc;
+            --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --radius-card: 8px;
+            --radius-btn: 12px;
+            
+            /* Color dinámico del dueño (falla seguro a primary-dark si no hay) */
+            --color-marca: @(string.IsNullOrEmpty(Model.color_tema) ? "#1a2a3a" : Model.color_tema);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            color: #333;
+        }
+
+        /* NAVBAR SUPERIOR */
+        .navbar-custom {
+            background-color: var(--color-marca); /* Usa el color del dueño o el Azul Oscuro */
+            padding: 15px 24px;
+        }
+        
+        /* BARRA DE BÚSQUEDA PILL-SHAPED */
+        .search-pill {
+            border-radius: 50px;
+            padding-left: 20px;
+            border: none;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        /* TARJETAS Y CONTENEDORES */
+        .card-custom {
+            background: white;
+            border-radius: var(--radius-card);
+            box-shadow: var(--shadow-card);
+            border: none;
+            padding: 24px;
+        }
+
+        /* GRID DEL CALENDARIO (Izquierda) */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            text-align: center;
+        }
+        .calendar-cell {
+            padding: 15px 5px;
+            border: 1px solid #f1f5f9;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .calendar-cell:hover { border-color: var(--primary-lavender); }
+        .calendar-cell.active { 
+            background-color: var(--primary-lavender); 
+            color: white; 
+            font-weight: 700; 
+        }
+
+        /* CHIPS DE TIEMPO (Derecha) */
+        .time-chip {
+            background-color: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px; /* Redondeados pequeños */
+            padding: 8px 16px;
+            margin: 5px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-block;
+        }
+        .time-chip.active {
+            background-color: var(--primary-lavender);
+            color: var(--primary-dark);
+            border-color: var(--primary-lavender);
+            font-weight: 700;
+        }
+
+        /* BOTÓN CTA PRINCIPAL */
+        .btn-cta {
+            background-color: var(--primary-info);
+            color: white;
+            border-radius: var(--radius-btn);
+            padding: 14px;
+            font-weight: 700;
+            width: 100%;
+            border: none;
+            transition: 0.3s;
+        }
+        .btn-cta:hover { background-color: #3aa3e8; transform: translateY(-2px); }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-custom shadow-sm">
+        <div class="container d-flex justify-content-between align-items-center">
+            <a class="navbar-brand text-white fw-bold d-flex align-items-center" href="#">
+                @if(!string.IsNullOrEmpty(Model.logotipo_url)) {
+                    <img src="@Model.logotipo_url" width="40" height="40" class="rounded-circle me-2" style="object-fit: cover;">
+                } else {
+                    <i class="bi bi-shop me-2"></i> 
+                }
+                @Model.nombre_empresa
+            </a>
+            
+            <div class="d-none d-md-flex position-relative" style="width: 300px;">
+                <input type="text" class="form-control search-pill" placeholder="Buscar otros servicios...">
+                <i class="bi bi-search position-absolute top-50 end-0 translate-middle-y me-3 text-muted"></i>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4 mb-5">
+        <div class="row g-4">
+            
+            <div class="col-lg-7">
+                <div class="card-custom h-100">
+                    <h5 class="fw-bold mb-4">Selecciona una fecha</h5>
+                    
+                    <div class="calendar-grid fw-bold text-muted small mb-2">
+                        <div>Dom</div><div>Lun</div><div>Mar</div><div>Mié</div><div>Jue</div><div>Vie</div><div>Sáb</div>
+                    </div>
+                    
+                    <div class="calendar-grid" id="calendario-contenedor">
+                        <div class="calendar-cell text-muted">28</div>
+                        <div class="calendar-cell text-muted">29</div>
+                        <div class="calendar-cell text-muted">30</div>
+                        <div class="calendar-cell">1</div>
+                        <div class="calendar-cell">2</div>
+                        <div class="calendar-cell active">3</div> <div class="calendar-cell">4</div>
+                        </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="card-custom h-100 d-flex flex-column">
+                    <h5 class="fw-bold mb-4">Horarios Disponibles</h5>
+                    
+                    <select class="form-select mb-4 fw-bold text-primary" style="border-radius: var(--radius-btn);">
+                        <option>Miércoles, 3 de Mayo</option>
+                    </select>
+
+                    <div class="flex-grow-1">
+                        <p class="small text-muted fw-bold mb-2"><i class="bi bi-sunrise"></i> Mañana</p>
+                        <div class="mb-3">
+                            <span class="time-chip">09:00 AM</span>
+                            <span class="time-chip">10:30 AM</span>
+                            <span class="time-chip">11:00 AM</span>
+                        </div>
+
+                        <p class="small text-muted fw-bold mb-2"><i class="bi bi-sun"></i> Tarde</p>
+                        <div class="mb-3">
+                            <span class="time-chip active">02:00 PM</span> <span class="time-chip">03:30 PM</span>
+                            <span class="time-chip">05:00 PM</span>
+                        </div>
+                        
+                        <p class="small text-muted fw-bold mb-2"><i class="bi bi-moon"></i> Noche</p>
+                        <div class="mb-3">
+                            <span class="time-chip text-decoration-line-through text-muted" style="background: #f8fafc;">07:00 PM</span> </div>
+                    </div>
+
+                    <button class="btn-cta mt-4 shadow-sm">
+                        Confirmar Cita - $150.00
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const celdasCalendario = document.querySelectorAll('.calendar-cell:not(.text-muted)');
+        const chipsTiempo = document.querySelectorAll('.time-chip');
+        const selectFecha = document.querySelector('.form-select');
+
+        // 1. Lógica de selección de días en el calendario
+        celdasCalendario.forEach(celda => {
+            celda.addEventListener('click', function() {
+                // Quitar 'active' de todas
+                celdasCalendario.forEach(c => c.classList.remove('active'));
+                // Poner 'active' a la clickeada
+                this.classList.add('active');
+                
+                // Actualizar el texto de la fecha confirmada
+                let diaSeleccionado = this.innerText;
+                selectFecha.innerHTML = `<option>Miércoles, ${diaSeleccionado} de Mayo</option>`;
+                
+                // Aquí iría el API Fetch real: fetch('/Home/GetHorariosDisponibles?idEmpresa=1&dia=' + diaSeleccionado)
+                console.log("Buscando horarios para el día: " + diaSeleccionado);
+            });
+        });
+
+        // 2. Lógica de selección de horas (Time Chips)
+        chipsTiempo.forEach(chip => {
+            chip.addEventListener('click', function() {
+                // Si está tachado (no disponible), no hacer nada
+                if(this.classList.contains('text-decoration-line-through')) return;
+
+                // Quitar 'active' de todos los chips
+                chipsTiempo.forEach(c => c.classList.remove('active'));
+                // Activar el seleccionado
+                this.classList.add('active');
+            });
+        });
+    });
+</script>
+</body>
+</html>
