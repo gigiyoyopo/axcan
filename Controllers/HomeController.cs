@@ -1,4 +1,4 @@
-// Mega Controlador AXCAN: Maneja Portal (Búsqueda/Estrellas), Admin SPA, Roles, AJAX Calendario y Reservas.
+// Mega Controlador AXCAN: Maneja Portal (Búsqueda/Estrellas), Admin SPA, Roles, AJAX Calendario, Reservas y SEGURIDAD GOOGLE.
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authentication;
 using System.Security.Claims;
@@ -8,7 +8,7 @@ using axcan.Data;
 using axcan.Models; 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Http;
-using System.Linq; // <-- ¡Faltaba esta! Es vital para usar .FirstOrDefaultAsync() y LINQ.
+using System.Linq; 
 
 namespace axcan.Controllers
 {
@@ -22,44 +22,43 @@ namespace axcan.Controllers
         }
 
         // =======================================================
-        // EL BUSCADOR Y LAS ESTRELLAS
+        // EL BUSCADOR Y LAS ESTRELLAS (De tus compañeros)
         // =======================================================
         [HttpGet]
-public async Task<IActionResult> Index(string busqueda)
-{
-    var empresasQuery = _context.empresas.AsQueryable();
+        public async Task<IActionResult> Index(string busqueda)
+        {
+            var empresasQuery = _context.empresas.AsQueryable();
 
-    if (!string.IsNullOrEmpty(busqueda))
-    {
-        busqueda = busqueda.ToLower();
-        empresasQuery = empresasQuery.Where(e => 
-            e.nombre_empresa.ToLower().Contains(busqueda) || 
-            e.rubro.ToLower().Contains(busqueda));
-    }
+            if (!string.IsNullOrEmpty(busqueda))
+            {
+                busqueda = busqueda.ToLower();
+                empresasQuery = empresasQuery.Where(e => 
+                    e.nombre_empresa.ToLower().Contains(busqueda) || 
+                    e.rubro.ToLower().Contains(busqueda));
+            }
 
-    var listaEmpresas = await empresasQuery.ToListAsync();
-    
-    // USAMOS LA CLASE NUEVA EN LUGAR DE DYNAMIC
-    var empresasConEstrellas = new List<EmpresaConEstrellasDTO>();
+            var listaEmpresas = await empresasQuery.ToListAsync();
+            
+            var empresasConEstrellas = new List<EmpresaConEstrellasDTO>();
 
-    foreach (var emp in listaEmpresas)
-    {
-        var resenas = await _context.resenas.Where(r => r.id_empresa == emp.id_empresa).ToListAsync();
-        double promedio = resenas.Any() ? resenas.Average(r => r.calificacion) : 0;
+            foreach (var emp in listaEmpresas)
+            {
+                var resenas = await _context.resenas.Where(r => r.id_empresa == emp.id_empresa).ToListAsync();
+                double promedio = resenas.Any() ? resenas.Average(r => r.calificacion) : 0;
 
-        empresasConEstrellas.Add(new EmpresaConEstrellasDTO {
-            Empresa = emp,
-            PromedioEstrellas = Math.Round(promedio, 1),
-            TotalResenas = resenas.Count
-        });
-    }
+                empresasConEstrellas.Add(new EmpresaConEstrellasDTO {
+                    Empresa = emp,
+                    PromedioEstrellas = Math.Round(promedio, 1),
+                    TotalResenas = resenas.Count
+                });
+            }
 
-    ViewBag.EmpresasDestacadas = empresasConEstrellas;
-    return View();
-}
+            ViewBag.EmpresasDestacadas = empresasConEstrellas;
+            return View();
+        }
 
         // =======================================================
-        // PANEL ADMIN SPA PREMIUM
+        // PANEL ADMIN SPA PREMIUM (De tus compañeros)
         // =======================================================
         [Route("admin")]
         public async Task<IActionResult> Admin()
@@ -95,7 +94,7 @@ public async Task<IActionResult> Index(string busqueda)
         }
 
         // =======================================================
-        // PLANTILLAS DINÁMICAS (Para Axel)
+        // PLANTILLAS DINÁMICAS 
         // =======================================================
         [Route("reservar/{nombreUrl}")]
         public async Task<IActionResult> PaginaCliente(string nombreUrl)
@@ -124,6 +123,38 @@ public async Task<IActionResult> Index(string busqueda)
         // =======================================================
         // GESTIÓN DE NEGOCIO (Guardar Datos)
         // =======================================================
+        [HttpPost]
+        public async Task<IActionResult> GuardarEmpresa(Empresa e, IFormFile logoArchivo, string rubroElegido, string rubroOtro)
+        {
+            try {
+                var userId = HttpContext.Session.GetInt32("UsuarioId");
+                if (userId == null) return RedirectToAction("login");
+
+                e.rubro = (rubroElegido == "Otros") ? rubroOtro : rubroElegido;
+
+                if (logoArchivo != null && logoArchivo.Length > 0) {
+                    e.logotipo_url = await GuardarFile(logoArchivo, "logos");
+                }
+
+                e.id_administrador = userId.GetValueOrDefault();
+                _context.empresas.Add(e);
+
+                var usuario = await _context.usuarios.FindAsync(userId);
+                if (usuario != null) {
+                    usuario.rol = "administrador";
+                    _context.usuarios.Update(usuario);
+                    HttpContext.Session.SetString("UsuarioRol", "administrador");
+                }
+
+                await _context.SaveChangesAsync();
+                return RedirectToAction("Admin");
+            }
+            catch (Exception ex) {
+                ViewBag.Error = "Error al registrar: " + ex.Message;
+                return View("registronegocio"); 
+            }
+        }
+
         [HttpPost]
         public async Task<IActionResult> EditarNegocio(Empresa e, IFormFile logoArchivo, IFormFile bannerArchivo)
         {
@@ -197,41 +228,38 @@ public async Task<IActionResult> Index(string busqueda)
         // =======================================================
         // LA API DEL CALENDARIO (AJAX DE AXEL)
         // =======================================================
-       [HttpGet]
-public async Task<IActionResult> GetHorariosDisponibles(int idEmpresa, DateTime fecha)
-{
-    int diaSemana = (int)fecha.DayOfWeek;
-    
-    var horarioDia = await _context.horarios_negocio
-        .FirstOrDefaultAsync(h => h.id_empresa == idEmpresa && h.dia_semana == diaSemana);
-
-    if (horarioDia == null || horarioDia.es_descanso)
-        return Json(new { disponibles = new List<string>(), mensaje = "Día de descanso" });
-
-    // Esto nos devuelve una lista de textos (Ej. ["10:30", "11:00"])
-    var citasOcupadas = await _context.citas
-        .Where(c => c.id_empresa == idEmpresa && c.fecha_cita.Date == fecha.Date)
-        .Select(c => c.hora_cita)
-        .ToListAsync();
-
-    var horasDisponibles = new List<string>();
-    var horaActual = horarioDia.hora_apertura;
-
-    while (horaActual < horarioDia.hora_cierre)
-    {
-        // ¡LA CURA! Convertimos el tiempo a texto PRIMERO
-        string horaFormateada = horaActual.ToString(@"hh\:mm");
-        
-        // Comparamos texto con texto
-        if (!citasOcupadas.Contains(horaFormateada))
+        [HttpGet]
+        public async Task<IActionResult> GetHorariosDisponibles(int idEmpresa, DateTime fecha)
         {
-            horasDisponibles.Add(horaFormateada);
-        }
-        horaActual = horaActual.Add(TimeSpan.FromMinutes(30));
-    }
+            int diaSemana = (int)fecha.DayOfWeek;
+            
+            var horarioDia = await _context.horarios_negocio
+                .FirstOrDefaultAsync(h => h.id_empresa == idEmpresa && h.dia_semana == diaSemana);
 
-    return Json(new { disponibles = horasDisponibles });
-}
+            if (horarioDia == null || horarioDia.es_descanso)
+                return Json(new { disponibles = new List<string>(), mensaje = "Día de descanso" });
+
+            var citasOcupadas = await _context.citas
+                .Where(c => c.id_empresa == idEmpresa && c.fecha_cita.Date == fecha.Date)
+                .Select(c => c.hora_cita)
+                .ToListAsync();
+
+            var horasDisponibles = new List<string>();
+            var horaActual = horarioDia.hora_apertura;
+
+            while (horaActual < horarioDia.hora_cierre)
+            {
+                string horaFormateada = horaActual.ToString(@"hh\:mm");
+                
+                if (!citasOcupadas.Contains(horaFormateada))
+                {
+                    horasDisponibles.Add(horaFormateada);
+                }
+                horaActual = horaActual.Add(TimeSpan.FromMinutes(30));
+            }
+
+            return Json(new { disponibles = horasDisponibles });
+        }
 
         [HttpPost]
         public async Task<IActionResult> AgendarCita(Cita nuevaCita)
@@ -252,11 +280,34 @@ public async Task<IActionResult> GetHorariosDisponibles(int idEmpresa, DateTime 
         }
 
         // =======================================================
-        // AUTENTICACIÓN Y PERFIL DE USUARIO
+        // AUTENTICACIÓN Y PERFIL DE USUARIO (TU CÓDIGO RESTAURADO)
         // =======================================================
         public IActionResult login() => View();
         public IActionResult registro() => View();
         public IActionResult registronegocio() => View();
+        public IActionResult acercade() => View();
+
+        [HttpPost]
+        public async Task<IActionResult> ProcesarRegistro(Usuario u)
+        {
+            try {
+                var existe = await _context.usuarios.AnyAsync(x => x.username == u.username);
+                if (existe) {
+                    ViewBag.Error = "Ese nombre de usuario ya existe.";
+                    return View("registro");
+                }
+                u.rol = "usuario";
+                u.fecha_registro = DateTime.Now;
+                _context.usuarios.Add(u);
+                await _context.SaveChangesAsync();
+                TempData["Mensaje"] = "¡Cuenta creada! Ya puedes iniciar sesión.";
+                return RedirectToAction("login");
+            }
+            catch (Exception ex) {
+                ViewBag.Error = "Error al registrar: " + ex.Message;
+                return View("registro");
+            }
+        }
 
         [HttpPost]
         public async Task<IActionResult> ProcesarLogin(string username, string password)
@@ -272,6 +323,62 @@ public async Task<IActionResult> GetHorariosDisponibles(int idEmpresa, DateTime 
             }
             ViewBag.Error = "Usuario o contraseña incorrectos."; 
             return View("login");
+        }
+
+        // --- TU OBRA MAESTRA DE GOOGLE ---
+        [HttpPost]
+        public async Task<IActionResult> AutenticarConGoogle([FromBody] GoogleToken model)
+        {
+            try
+            {
+                var settings = new GoogleJsonWebSignature.ValidationSettings()
+                {
+                    Audience = new List<string>() { "1058925398660-ovi8nq4pj2a0qtn7kmelganfug5lu008.apps.googleusercontent.com" } 
+                };
+                
+                var payload = await GoogleJsonWebSignature.ValidateAsync(model.Credential, settings);
+
+                string correoPuro = payload.Email.ToLower();
+
+                var user = await _context.usuarios.FirstOrDefaultAsync(u => u.correo.ToLower() == correoPuro);
+                
+                if (user == null)
+                {
+                    user = new Usuario 
+                    {
+                        username = correoPuro.Split('@')[0] + "_" + new Random().Next(100, 999), 
+                        correo = correoPuro,
+                        nombre = payload.GivenName ?? "Usuario",
+                        apellido_paterno = payload.FamilyName ?? "",
+                        apellido_materno = "", 
+                        password = "EMPTY", 
+                        rol = "usuario",
+                        fecha_registro = DateTime.Now
+                    };
+                    _context.usuarios.Add(user);
+                    await _context.SaveChangesAsync();
+                }
+
+                HttpContext.Session.SetInt32("UsuarioId", user.id_usuario);
+                HttpContext.Session.SetString("UsuarioNombre", user.nombre);
+                HttpContext.Session.SetString("UsuarioRol", user.rol);
+
+                var claims = new List<Claim>
+                {
+                    new Claim(ClaimTypes.NameIdentifier, payload.Subject),
+                    new Claim(ClaimTypes.Name, payload.Name),
+                    new Claim(ClaimTypes.Email, payload.Email)
+                };
+                var claimsIdentity = new ClaimsIdentity(claims, "Cookies");
+                await HttpContext.SignInAsync("Cookies", new ClaimsPrincipal(claimsIdentity), new AuthenticationProperties { IsPersistent = true });
+
+                return Json(new { success = true, redirectUrl = Url.Action("Index", "Home") });
+            }
+            catch (Exception ex)
+            {
+                string detalleError = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+                return BadRequest(new { success = false, message = detalleError });
+            }
         }
 
         [HttpPost]
@@ -313,7 +420,8 @@ public async Task<IActionResult> GetHorariosDisponibles(int idEmpresa, DateTime 
             return RedirectToAction("ConfiguracionDeCuenta");
         }
 
-        public IActionResult Logout() {
+        // ¡AQUÍ ESTÁ LA CORRECCIÓN DEL ERROR DE RENDER! Le agregamos "async Task<IActionResult>"
+        public async Task<IActionResult> Logout() {
             HttpContext.Session.Clear();
             await HttpContext.SignOutAsync("Cookies");
             return RedirectToAction("login");
@@ -330,10 +438,17 @@ public async Task<IActionResult> GetHorariosDisponibles(int idEmpresa, DateTime 
             return $"/{folder}/{name}";
         }
     }
+    
+    // CLASES DE APOYO (Tanto las de tus compañeros como la tuya de Google)
     public class EmpresaConEstrellasDTO
     {
         public Empresa Empresa { get; set; }
         public double PromedioEstrellas { get; set; }
         public int TotalResenas { get; set; }
+    }
+
+    public class GoogleToken
+    {
+        public string Credential { get; set; }
     }
 }
