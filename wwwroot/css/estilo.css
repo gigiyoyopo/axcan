@@ -13,7 +13,7 @@
 /* Fondo para login y registro:) */
 .fondo-auth {
     position: relative;
-    background-image: url("../../wwwroot/imagenesaxcan/fondo_login_registro.jpg");
+    background-image: url("/imagenesaxcan/fondo_login_registro.jpg");
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
