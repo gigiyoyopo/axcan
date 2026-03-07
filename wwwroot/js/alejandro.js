@@ -41,8 +41,7 @@ window.onload = function () {
                 alert("¡Las contraseñas no coinciden, cawn! Chécalo bien.");
                 return;
             }
-
-            // Si todo está bien, dejamos que el formulario llegue a C# sin decir nada extra.
+            // Si todo está bien, dejamos que el formulario llegue a C#
         });
     }
 };
