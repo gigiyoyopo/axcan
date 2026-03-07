@@ -300,7 +300,7 @@ namespace axcan.Controllers
                 u.fecha_registro = DateTime.Now;
                 _context.usuarios.Add(u);
                 await _context.SaveChangesAsync();
-                TempData["Mensaje"] = "¡Cuenta creada! Ya puedes iniciar sesión.";
+                TempData["Mensaje"] = "¡Bienvenido a AXCAN! 🚀 Tu cuenta ha sido creada con éxito. Inicia sesión y descubre la forma más rápida de gestionar tus reservas.";
                 return RedirectToAction("login");
             }
             catch (Exception ex) {

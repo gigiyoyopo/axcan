@@ -30,18 +30,27 @@ async function handleGoogleResponse(response) {
 window.onload = function () {
     const registerForm = document.getElementById('registerForm');
 
-    // Solo ejecutamos esto si estamos en la página de registro
     if (registerForm) {
         registerForm.addEventListener('submit', function(e) {
             const pass = document.getElementById('regPass').value;
             const passConfirm = document.getElementById('regPassConfirm').value;
 
+            // Validación 1: Que coincidan
             if (pass !== passConfirm) {
-                e.preventDefault(); // Bloqueamos el envío
-                alert("¡Las contraseñas no coinciden, cawn! Chécalo bien.");
+                e.preventDefault(); 
+                alert("Las contraseñas no coinciden. Por favor, verifícalas.");
                 return;
             }
-            // Si todo está bien, dejamos que el formulario llegue a C#
+
+            // Seguridad de la contraseña (Mayúscula, Número, Símbolo, Min 8 caracteres)
+            const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+            if (!passwordRegex.test(pass)) {
+                e.preventDefault();
+                alert("Tu contraseña debe tener al menos 8 caracteres, incluir una mayúscula, un número y un símbolo especial (ej. @, #, $, !).");
+                return;
+            }
+
+           
         });
     }
 };
