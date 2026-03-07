@@ -1,74 +1,48 @@
-// 1. CONFIGURACIÓN INICIAL
-// Nota: Asegúrate de que las constantes coincidan con tu panel de Supabase
-const SUPABASE_URL = "https://tu-proyecto.supabase.co"; 
-const SUPABASE_ANON_KEY = "tu-anon-key-aqui";
-const CLIENT_ID = "1058925398660-ovi8nq4pj2a0qtn7kmelganfug5lu008.apps.googleusercontent.com";
-
-// CORRECCIÓN: Usamos el objeto global 'supabase' de la librería externa
-const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-// 2. FUNCIÓN PARA RECIBIR EL TOKEN DE GOOGLE
+// 1. FUNCIÓN MAESTRA PARA LOGIN Y REGISTRO CON GOOGLE
 async function handleGoogleResponse(response) {
-    console.log("Token recibido de Google. Autenticando en Supabase...");
+    console.log("Token recibido de Google. Enviando al backend de Axcan (.NET)...");
 
-    const { data, error } = await _supabase.auth.signInWithIdToken({
-        provider: 'google',
-        token: response.credential,
-    });
+    try {
+        const resBackend = await fetch('/Home/AutenticarConGoogle', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ credential: response.credential })
+        });
 
-    if (error) {
-        console.error("Error de Supabase:", error.message);
-        alert("Error al vincular con Supabase: " + error.message);
-    } else {
-        console.log("¡Login exitoso!", data);
-        window.location.href = "/Home/Index";
+        const resultadoNet = await resBackend.json();
+
+        if (resultadoNet.success) {
+            console.log("¡.NET te dio el pase de entrada! Redirigiendo...");
+            window.location.href = resultadoNet.redirectUrl; 
+        } else {
+            console.error("El servidor rechazó el login/registro:", resultadoNet.message);
+            alert("Error en .NET: " + resultadoNet.message);
+        }
+    } catch (err) {
+        console.error("Error conectando con C#:", err);
+        alert("Ocurrió un error al conectar con el servidor.");
     }
 }
 
-// 3. INICIALIZACIÓN DE GOOGLE Y LOGIN MANUAL
+// 2. VALIDACIÓN DEL FORMULARIO DE REGISTRO MANUAL
 window.onload = function () {
-    // Inicializar Google
-    if (document.getElementById("google-login-btn") || document.getElementById("google-register-btn")) {
-        google.accounts.id.initialize({
-            client_id: CLIENT_ID,
-            callback: handleGoogleResponse
-        });
+    const registerForm = document.getElementById('registerForm');
 
-        const btnId = document.getElementById("google-login-btn") ? "google-login-btn" : "google-register-btn";
+    // Solo ejecutamos esto si estamos en la página de registro
+    if (registerForm) {
+        registerForm.addEventListener('submit', function(e) {
+            const pass = document.getElementById('regPass').value;
+            const passConfirm = document.getElementById('regPassConfirm').value;
 
-        google.accounts.id.renderButton(
-            document.getElementById(btnId),
-            { theme: "outline", size: "large", width: "100%", text: "signin_with", shape: "pill" }
-        );
-    }
+            if (pass !== passConfirm) {
+                e.preventDefault(); // Bloqueamos el envío
+                alert("¡Las contraseñas no coinciden, cawn! Chécalo bien.");
+                return;
+            }
 
-    // LÓGICA DEL LOGIN MANUAL
-    const loginForm = document.getElementById('loginForm');
-    if (loginForm) {
-        loginForm.addEventListener('submit', function (e) {
-            // Aquí NO ponemos e.preventDefault() si queremos que el formulario 
-            // viaje a nuestro controlador de .NET de forma tradicional.
-            console.log("Enviando login a .NET...");
+            // Si todo está bien, dejamos que el formulario llegue a C# sin decir nada extra.
         });
     }
 };
-
-// 4. EL GUARDIA DEL REGISTRO (Fuera del onload para que sea más rápido)
-document.addEventListener("DOMContentLoaded", function () {
-    const regForm = document.getElementById('registerForm');
-    
-    if (regForm) {
-        regForm.addEventListener('submit', function (e) {
-            const pass = document.getElementById('regPass').value;
-            const confirm = document.getElementById('regPassConfirm').value;
-
-            if (pass !== confirm) {
-                e.preventDefault(); // Detiene el envío si están mal
-                alert("¡Las contraseñas no coinciden, cawn! Chécalo bien.");
-            } else {
-                console.log("Contraseñas coinciden. Enviando a .NET...");
-                // Aquí el formulario sigue su curso hacia ProcesarRegistro
-            }
-        });
-    }
-});

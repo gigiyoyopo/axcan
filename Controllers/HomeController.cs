@@ -1,9 +1,14 @@
 // Mega Controlador AXCAN: Maneja Portal (Búsqueda/Estrellas), Admin SPA, Roles, AJAX Calendario y Reservas.
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authentication;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Google.Apis.Auth;
 using axcan.Data; 
 using axcan.Models; 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Http;
+using System.Linq; // <-- ¡Faltaba esta! Es vital para usar .FirstOrDefaultAsync() y LINQ.
 
 namespace axcan.Controllers
 {
@@ -310,6 +315,7 @@ public async Task<IActionResult> GetHorariosDisponibles(int idEmpresa, DateTime 
 
         public IActionResult Logout() {
             HttpContext.Session.Clear();
+            await HttpContext.SignOutAsync("Cookies");
             return RedirectToAction("login");
         }
 

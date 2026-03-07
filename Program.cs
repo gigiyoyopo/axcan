@@ -1,33 +1,47 @@
 using Microsoft.EntityFrameworkCore;
 using axcan.Data;
+using Microsoft.AspNetCore.HttpOverrides;
 
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 var builder = WebApplication.CreateBuilder(args);
 
-// --- 1. REGISTRO DE SERVICIOS (TODO lo que sea builder.Services va AQUÍ) ---
+// =================================================================
+// 1. FASE DE SERVICIOS (TODO DEBE IR ANTES DEL BUILD)
+// =================================================================
 
 builder.Services.AddControllersWithViews();
 
-// Obtenemos la cadena de conexión
+// A. Base de Datos (Rescatamos la variable que faltaba)
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-
-// Registramos el Contexto con Npgsql
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString, npgsqlOptions => {
         npgsqlOptions.EnableRetryOnFailure(5, TimeSpan.FromSeconds(10), null);
     }));
 
-// CONFIGURACIÓN DE SESIÓN (Movido arriba de builder.Build)
+// B. Sesiones (Para que la lógica de tus compañeros funcione)
 builder.Services.AddSession(options => {
     options.IdleTimeout = TimeSpan.FromMinutes(30);
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
 });
 
-// --- LA LÍNEA SAGRADA ---
-var app = builder.Build();
+// C. Seguridad y Cookies (Blindado para producción)
+builder.Services.AddAuthentication(options => {
+    options.DefaultScheme = "Cookies";
+})
+.AddCookie("Cookies", options => {
+    options.LoginPath = "/Home/login"; // Si alguien intenta entrar sin permiso, lo manda aquí
+    options.Cookie.SameSite = SameSiteMode.Lax; 
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always; 
+});
 
-// --- EL CHISMOSO (Logs de Render) ---
+// =================================================================
+// --- LA LÍNEA SAGRADA --- (No mover de aquí)
+var app = builder.Build();
+// =================================================================
+
+
+// --- EL CHISMOSO (Para ver si Supabase conecta en los logs de Render) ---
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -44,19 +58,41 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// --- 2. CONFIGURACIÓN DEL PIPELINE (TODO lo que sea app.Use va AQUÍ) ---
+// =================================================================
+// 2. FASE DE MIDDLEWARE (EL ORDEN AQUÍ ES DE VIDA O MUERTE)
+// =================================================================
+
+// A. Configuración del Proxy (Para que Render entienda el tráfico)
+var forwardedHeadersOptions = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+};
+forwardedHeadersOptions.KnownNetworks.Clear();
+forwardedHeadersOptions.KnownProxies.Clear();
+
+app.UseForwardedHeaders(forwardedHeadersOptions);
+
+// B. Forzar HTTPS
+app.Use((context, next) =>
+{
+    context.Request.Scheme = "https";
+    return next();
+});
 
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
+    app.UseHsts();
 }
 
 app.UseStaticFiles();
+app.UseRouting();
 
-// ACTIVAR SESIÓN (Debe ir después de StaticFiles y antes de Routing)
+// C. ¡EL SALVAVIDAS! (Activa la memoria de sesiones de tus compañeros)
 app.UseSession();
 
-app.UseRouting();
+// D. Activar Seguridad (Siempre después de UseRouting y UseSession)
+app.UseAuthentication(); 
 app.UseAuthorization();
 
 app.MapControllerRoute(
