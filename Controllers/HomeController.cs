@@ -8,7 +8,7 @@ using axcan.Data;
 using axcan.Models; 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Http;
-using System.Linq; 
+using System.Linq;
 
 namespace axcan.Controllers
 {
@@ -59,43 +59,44 @@ public async Task<IActionResult> ProcesarRegistro(Usuario u)
     }
 }
         // =======================================================
-        // EL BUSCADOR Y LAS ESTRELLAS (De tus compañeros)
+        // EL BUSCADOR Y LAS ESTRELLAS
         // =======================================================
         [HttpGet]
-        public async Task<IActionResult> Index(string busqueda)
-        {
-            var empresasQuery = _context.empresas.AsQueryable();
+public async Task<IActionResult> Index(string busqueda)
+{
+    var empresasQuery = _context.empresas.AsQueryable();
 
-            if (!string.IsNullOrEmpty(busqueda))
-            {
-                busqueda = busqueda.ToLower();
-                empresasQuery = empresasQuery.Where(e => 
-                    e.nombre_empresa.ToLower().Contains(busqueda) || 
-                    e.rubro.ToLower().Contains(busqueda));
-            }
+    if (!string.IsNullOrEmpty(busqueda))
+    {
+        busqueda = busqueda.ToLower();
+        empresasQuery = empresasQuery.Where(e => 
+            e.nombre_empresa.ToLower().Contains(busqueda) || 
+            e.rubro.ToLower().Contains(busqueda));
+    }
 
-            var listaEmpresas = await empresasQuery.ToListAsync();
-            
-            var empresasConEstrellas = new List<EmpresaConEstrellasDTO>();
+    var listaEmpresas = await empresasQuery.ToListAsync();
+    
+    // USAMOS LA CLASE NUEVA EN LUGAR DE DYNAMIC
+    var empresasConEstrellas = new List<EmpresaConEstrellasDTO>();
 
-            foreach (var emp in listaEmpresas)
-            {
-                var resenas = await _context.resenas.Where(r => r.id_empresa == emp.id_empresa).ToListAsync();
-                double promedio = resenas.Any() ? resenas.Average(r => r.calificacion) : 0;
+    foreach (var emp in listaEmpresas)
+    {
+        var resenas = await _context.resenas.Where(r => r.id_empresa == emp.id_empresa).ToListAsync();
+        double promedio = resenas.Any() ? resenas.Average(r => r.calificacion) : 0;
 
-                empresasConEstrellas.Add(new EmpresaConEstrellasDTO {
-                    Empresa = emp,
-                    PromedioEstrellas = Math.Round(promedio, 1),
-                    TotalResenas = resenas.Count
-                });
-            }
+        empresasConEstrellas.Add(new EmpresaConEstrellasDTO {
+            Empresa = emp,
+            PromedioEstrellas = Math.Round(promedio, 1),
+            TotalResenas = resenas.Count
+        });
+    }
 
-            ViewBag.EmpresasDestacadas = empresasConEstrellas;
-            return View();
-        }
+    ViewBag.EmpresasDestacadas = empresasConEstrellas;
+    return View();
+}
 
         // =======================================================
-        // PANEL ADMIN SPA PREMIUM (De tus compañeros)
+        // PANEL ADMIN SPA PREMIUM
         // =======================================================
         [Route("admin")]
         public async Task<IActionResult> Admin()
@@ -131,7 +132,7 @@ public async Task<IActionResult> ProcesarRegistro(Usuario u)
         }
 
         // =======================================================
-        // PLANTILLAS DINÁMICAS 
+        // PLANTILLAS DINÁMICAS (Para Axel)
         // =======================================================
         [Route("reservar/{nombreUrl}")]
         public async Task<IActionResult> PaginaCliente(string nombreUrl)
@@ -160,38 +161,6 @@ public async Task<IActionResult> ProcesarRegistro(Usuario u)
         // =======================================================
         // GESTIÓN DE NEGOCIO (Guardar Datos)
         // =======================================================
-        [HttpPost]
-        public async Task<IActionResult> GuardarEmpresa(Empresa e, IFormFile logoArchivo, string rubroElegido, string rubroOtro)
-        {
-            try {
-                var userId = HttpContext.Session.GetInt32("UsuarioId");
-                if (userId == null) return RedirectToAction("login");
-
-                e.rubro = (rubroElegido == "Otros") ? rubroOtro : rubroElegido;
-
-                if (logoArchivo != null && logoArchivo.Length > 0) {
-                    e.logotipo_url = await GuardarFile(logoArchivo, "logos");
-                }
-
-                e.id_administrador = userId.GetValueOrDefault();
-                _context.empresas.Add(e);
-
-                var usuario = await _context.usuarios.FindAsync(userId);
-                if (usuario != null) {
-                    usuario.rol = "administrador";
-                    _context.usuarios.Update(usuario);
-                    HttpContext.Session.SetString("UsuarioRol", "administrador");
-                }
-
-                await _context.SaveChangesAsync();
-                return RedirectToAction("Admin");
-            }
-            catch (Exception ex) {
-                ViewBag.Error = "Error al registrar: " + ex.Message;
-                return View("registronegocio"); 
-            }
-        }
-
         [HttpPost]
         public async Task<IActionResult> EditarNegocio(Empresa e, IFormFile logoArchivo, IFormFile bannerArchivo)
         {
@@ -237,35 +206,28 @@ public async Task<IActionResult> ProcesarRegistro(Usuario u)
 [HttpGet]
 public async Task<IActionResult> GetStatsAdmin(int idEmpresa)
 {
-    // 1. Gráfica de Barras: Citas por día (Lunes: 10, Martes: 11...)
-    // Obtenemos las citas de la última semana
     var inicioSemana = DateTime.Now.Date.AddDays(-7);
-    var citasSemana = await _context.citas
-        .Where(c => c.id_empresa == idEmpresa && c.fecha_cita >= inicioSemana)
+    
+    // Usamos 'fecha' en lugar de 'fecha_cita'
+    var todasLasCitas = await _context.citas
+        .Where(c => c.id_empresa == idEmpresa)
         .ToListAsync();
 
-    var citasPorDia = citasSemana
-        .GroupBy(c => c.fecha_cita.ToString("dddd"))
+    var citasPorDia = todasLasCitas
+        .Where(c => c.fecha >= inicioSemana)
+        .GroupBy(c => c.fecha.ToString("dddd"))
         .Select(g => new { Dia = g.Key, Total = g.Count() })
         .ToList();
 
-    // 2. Gráfica de Pastel: Citas hechas vs Canceladas
-   // Traemos los datos a memoria primero con ToList() para que C# maneje el conteo
-var todasLasCitas = await _context.citas
-    .Where(c => c.id_empresa == idEmpresa)
-    .ToListAsync();
+    var hechas = todasLasCitas.Count(c => 
+        string.Equals(c.estatus, "Confirmada", StringComparison.OrdinalIgnoreCase) || 
+        string.Equals(c.estatus, "Completada", StringComparison.OrdinalIgnoreCase));
 
-// Usamos Equals con OrdinalIgnoreCase para que no importe si es "Confirmada" o "confirmada"
-var hechas = todasLasCitas.Count(c => 
-    string.Equals(c.estatus, "Confirmada", StringComparison.OrdinalIgnoreCase) || 
-    string.Equals(c.estatus, "Completada", StringComparison.OrdinalIgnoreCase));
+    var canceladas = todasLasCitas.Count(c => 
+        string.Equals(c.estatus, "Cancelada", StringComparison.OrdinalIgnoreCase));
 
-var canceladas = todasLasCitas.Count(c => 
-    string.Equals(c.estatus, "Cancelada", StringComparison.OrdinalIgnoreCase));
-
-    // 3. Gráfica de Barras: Día de la semana histórico (¿Cuál es el día más fuerte?)
     var diaMasFuerte = todasLasCitas
-        .GroupBy(c => c.fecha_cita.DayOfWeek)
+        .GroupBy(c => c.fecha.DayOfWeek)
         .Select(g => new { DiaSemana = g.Key.ToString(), Cantidad = g.Count() })
         .OrderByDescending(x => x.Cantidad)
         .ToList();
@@ -307,49 +269,54 @@ var canceladas = todasLasCitas.Count(c =>
         // =======================================================
         // LA API DEL CALENDARIO (AJAX DE AXEL)
         // =======================================================
-        [HttpGet]
-        public async Task<IActionResult> GetHorariosDisponibles(int idEmpresa, DateTime fecha)
+       [HttpGet]
+public async Task<IActionResult> GetHorariosDisponibles(int idEmpresa, DateTime fecha)
+{
+    int diaSemana = (int)fecha.DayOfWeek;
+    var horarioDia = await _context.horarios_negocio
+        .FirstOrDefaultAsync(h => h.id_empresa == idEmpresa && h.dia_semana == diaSemana);
+
+    if (horarioDia == null || horarioDia.es_descanso)
+        return Json(new { disponibles = new List<string>(), mensaje = "Día de descanso" });
+
+    // Cambiamos 'fecha_cita' por 'fecha' y 'hora_cita' por 'hora'
+    var citasOcupadas = await _context.citas
+        .Where(c => c.id_empresa == idEmpresa && c.fecha.Date == fecha.Date)
+        .Select(c => c.hora) 
+        .ToListAsync();
+
+    var horasDisponibles = new List<string>();
+    var horaActual = horarioDia.hora_apertura;
+
+    while (horaActual < horarioDia.hora_cierre)
+    {
+        // Formateamos el TimeSpan a string para el JS de Axel
+        string horaFormateada = horaActual.ToString(@"hh\:mm");
+        
+        // Comparamos el TimeSpan actual con la lista de horas ocupadas
+        if (!citasOcupadas.Any(h => h.ToString(@"hh\:mm") == horaFormateada))
         {
-            int diaSemana = (int)fecha.DayOfWeek;
-            
-            var horarioDia = await _context.horarios_negocio
-                .FirstOrDefaultAsync(h => h.id_empresa == idEmpresa && h.dia_semana == diaSemana);
-
-            if (horarioDia == null || horarioDia.es_descanso)
-                return Json(new { disponibles = new List<string>(), mensaje = "Día de descanso" });
-
-            var citasOcupadas = await _context.citas
-                .Where(c => c.id_empresa == idEmpresa && c.fecha_cita.Date == fecha.Date)
-                .Select(c => c.hora_cita)
-                .ToListAsync();
-
-            var horasDisponibles = new List<string>();
-            var horaActual = horarioDia.hora_apertura;
-
-            while (horaActual < horarioDia.hora_cierre)
-            {
-                string horaFormateada = horaActual.ToString(@"hh\:mm");
-                
-                if (!citasOcupadas.Contains(horaFormateada))
-                {
-                    horasDisponibles.Add(horaFormateada);
-                }
-                horaActual = horaActual.Add(TimeSpan.FromMinutes(30));
-            }
-
-            return Json(new { disponibles = horasDisponibles });
+            horasDisponibles.Add(horaFormateada);
         }
+        horaActual = horaActual.Add(TimeSpan.FromMinutes(30));
+    }
 
+    return Json(new { disponibles = horasDisponibles });
+}
+//agendar cita
         [HttpPost]
-        public async Task<IActionResult> AgendarCita(Cita nuevaCita)
-        {
-            nuevaCita.estatus = "Confirmada";
-            nuevaCita.fecha_creacion = DateTime.Now;
-            _context.citas.Add(nuevaCita);
-            await _context.SaveChangesAsync();
-            return Json(new { success = true, mensaje = "Cita agendada con éxito" });
-        }
-
+public async Task<IActionResult> AgendarCita(Cita nuevaCita)
+{
+    // Eliminamos 'fecha_creacion' porque no existe en tu tabla SQL
+    nuevaCita.estatus = "Confirmada";
+    
+    // Asegúrate que desde el JS Axel mande:
+    // id_expediente e id_usuario_tramito porque son NOT NULL
+    
+    _context.citas.Add(nuevaCita);
+    await _context.SaveChangesAsync();
+    return Json(new { success = true, mensaje = "Cita agendada con éxito" });
+}
         [HttpGet]
         public async Task<JsonResult> GetDatosCalendario(int idEmpresa)
         {
@@ -359,35 +326,12 @@ var canceladas = todasLasCitas.Count(c =>
         }
 
         // =======================================================
-        // AUTENTICACIÓN Y PERFIL DE USUARIO (TU CÓDIGO RESTAURADO)
+        // AUTENTICACIÓN Y PERFIL DE USUARIO
         // =======================================================
         public IActionResult login() => View();
         public IActionResult RegistroExitoso() => View();
         public IActionResult registro() => View();
         public IActionResult registronegocio() => View();
-        public IActionResult acercade() => View();
-
-        [HttpPost]
-        public async Task<IActionResult> ProcesarRegistro(Usuario u)
-        {
-            try {
-                var existe = await _context.usuarios.AnyAsync(x => x.username == u.username);
-                if (existe) {
-                    ViewBag.Error = "Ese nombre de usuario ya existe.";
-                    return View("registro");
-                }
-                u.rol = "usuario";
-                u.fecha_registro = DateTime.Now;
-                _context.usuarios.Add(u);
-                await _context.SaveChangesAsync();
-                TempData["Mensaje"] = "¡Bienvenido a AXCAN! 🚀 Tu cuenta ha sido creada con éxito. Inicia sesión y descubre la forma más rápida de gestionar tus reservas.";
-                return RedirectToAction("login");
-            }
-            catch (Exception ex) {
-                ViewBag.Error = "Error al registrar: " + ex.Message;
-                return View("registro");
-            }
-        }
 
         [HttpPost]
         public async Task<IActionResult> ProcesarLogin(string username, string password)
@@ -403,62 +347,6 @@ var canceladas = todasLasCitas.Count(c =>
             }
             ViewBag.Error = "Usuario o contraseña incorrectos."; 
             return View("login");
-        }
-
-        // --- TU OBRA MAESTRA DE GOOGLE ---
-        [HttpPost]
-        public async Task<IActionResult> AutenticarConGoogle([FromBody] GoogleToken model)
-        {
-            try
-            {
-                var settings = new GoogleJsonWebSignature.ValidationSettings()
-                {
-                    Audience = new List<string>() { "1058925398660-ovi8nq4pj2a0qtn7kmelganfug5lu008.apps.googleusercontent.com" } 
-                };
-                
-                var payload = await GoogleJsonWebSignature.ValidateAsync(model.Credential, settings);
-
-                string correoPuro = payload.Email.ToLower();
-
-                var user = await _context.usuarios.FirstOrDefaultAsync(u => u.correo.ToLower() == correoPuro);
-                
-                if (user == null)
-                {
-                    user = new Usuario 
-                    {
-                        username = correoPuro.Split('@')[0] + "_" + new Random().Next(100, 999), 
-                        correo = correoPuro,
-                        nombre = payload.GivenName ?? "Usuario",
-                        apellido_paterno = payload.FamilyName ?? "",
-                        apellido_materno = "", 
-                        password = "EMPTY", 
-                        rol = "usuario",
-                        fecha_registro = DateTime.Now
-                    };
-                    _context.usuarios.Add(user);
-                    await _context.SaveChangesAsync();
-                }
-
-                HttpContext.Session.SetInt32("UsuarioId", user.id_usuario);
-                HttpContext.Session.SetString("UsuarioNombre", user.nombre);
-                HttpContext.Session.SetString("UsuarioRol", user.rol);
-
-                var claims = new List<Claim>
-                {
-                    new Claim(ClaimTypes.NameIdentifier, payload.Subject),
-                    new Claim(ClaimTypes.Name, payload.Name),
-                    new Claim(ClaimTypes.Email, payload.Email)
-                };
-                var claimsIdentity = new ClaimsIdentity(claims, "Cookies");
-                await HttpContext.SignInAsync("Cookies", new ClaimsPrincipal(claimsIdentity), new AuthenticationProperties { IsPersistent = true });
-
-                return Json(new { success = true, redirectUrl = Url.Action("Index", "Home") });
-            }
-            catch (Exception ex)
-            {
-                string detalleError = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
-                return BadRequest(new { success = false, message = detalleError });
-            }
         }
 
         [HttpPost]
@@ -515,17 +403,4 @@ public async Task<IActionResult> Logout() {
             return $"/{folder}/{name}";
         }
     }
-    
-    // CLASES DE APOYO (Tanto las de tus compañeros como la tuya de Google)
-    public class EmpresaConEstrellasDTO
-    {
-        public Empresa Empresa { get; set; }
-        public double PromedioEstrellas { get; set; }
-        public int TotalResenas { get; set; }
     }
-
-    public class GoogleToken
-    {
-        public string Credential { get; set; }
-    }
-}
