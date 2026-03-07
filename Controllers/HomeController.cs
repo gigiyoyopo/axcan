@@ -1,4 +1,4 @@
-// Mega Controlador AXCAN: Maneja Portal (Búsqueda/Estrellas), Admin SPA, Roles, AJAX Calendario, Reservas y SEGURIDAD GOOGLE.
+
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authentication;
 using System.Security.Claims;
@@ -20,7 +20,44 @@ namespace axcan.Controllers
         {
             _context = context;
         }
+//procesar registro 
+[HttpPost]
+public async Task<IActionResult> ProcesarRegistro(Usuario u)
+{
+    try 
+    {
+        // 1. Validamos que no exista ni el username ni el correo
+        var existeUser = await _context.usuarios.AnyAsync(x => x.username == u.username);
+        var existeCorreo = await _context.usuarios.AnyAsync(x => x.correo == u.correo);
 
+        if (existeUser) {
+            ViewBag.Error = "Ese nombre de usuario ya está ocupado, padrino. Intenta otro.";
+            return View("registro");
+        }
+        if (existeCorreo) {
+            ViewBag.Error = "Ese correo ya está registrado. Mejor inicia sesión.";
+            return View("registro");
+        }
+
+        // 2. Le ponemos sus valores por defecto
+        u.rol = "usuario"; 
+        u.fecha_registro = DateTime.Now;
+        
+        // 3. ¡Lo guardamos en Supabase!
+        _context.usuarios.Add(u);
+        await _context.SaveChangesAsync();
+        
+        // 4. Mensaje de éxito y lo mandamos al Login
+        TempData["Mensaje"] = "¡Bienvenido a AXCAN! Tu cuenta ha sido creada, ya puedes iniciar sesión.";
+       return RedirectToAction("RegistroExitoso");
+    }
+    catch (Exception ex) 
+    {
+        // Si la base de datos explota, te escupe el error exacto aquí
+        ViewBag.Error = "Error interno al registrar: " + (ex.InnerException?.Message ?? ex.Message);
+        return View("registro");
+    }
+}
         // =======================================================
         // EL BUSCADOR Y LAS ESTRELLAS (De tus compañeros)
         // =======================================================
@@ -196,7 +233,49 @@ namespace axcan.Controllers
             }
             return RedirectToAction("Admin");
         }
+// datos para graficas 
+[HttpGet]
+public async Task<IActionResult> GetStatsAdmin(int idEmpresa)
+{
+    // 1. Gráfica de Barras: Citas por día (Lunes: 10, Martes: 11...)
+    // Obtenemos las citas de la última semana
+    var inicioSemana = DateTime.Now.Date.AddDays(-7);
+    var citasSemana = await _context.citas
+        .Where(c => c.id_empresa == idEmpresa && c.fecha_cita >= inicioSemana)
+        .ToListAsync();
 
+    var citasPorDia = citasSemana
+        .GroupBy(c => c.fecha_cita.ToString("dddd"))
+        .Select(g => new { Dia = g.Key, Total = g.Count() })
+        .ToList();
+
+    // 2. Gráfica de Pastel: Citas hechas vs Canceladas
+   // Traemos los datos a memoria primero con ToList() para que C# maneje el conteo
+var todasLasCitas = await _context.citas
+    .Where(c => c.id_empresa == idEmpresa)
+    .ToListAsync();
+
+// Usamos Equals con OrdinalIgnoreCase para que no importe si es "Confirmada" o "confirmada"
+var hechas = todasLasCitas.Count(c => 
+    string.Equals(c.estatus, "Confirmada", StringComparison.OrdinalIgnoreCase) || 
+    string.Equals(c.estatus, "Completada", StringComparison.OrdinalIgnoreCase));
+
+var canceladas = todasLasCitas.Count(c => 
+    string.Equals(c.estatus, "Cancelada", StringComparison.OrdinalIgnoreCase));
+
+    // 3. Gráfica de Barras: Día de la semana histórico (¿Cuál es el día más fuerte?)
+    var diaMasFuerte = todasLasCitas
+        .GroupBy(c => c.fecha_cita.DayOfWeek)
+        .Select(g => new { DiaSemana = g.Key.ToString(), Cantidad = g.Count() })
+        .OrderByDescending(x => x.Cantidad)
+        .ToList();
+
+    return Json(new {
+        barrasCitasDia = citasPorDia,
+        pastelCancelaciones = new { hechas, canceladas },
+        barrasDiaFuerte = diaMasFuerte
+    });
+}
         [HttpPost]
         public async Task<IActionResult> GuardarHorarios(int id_empresa, IFormCollection form)
         {
@@ -283,6 +362,7 @@ namespace axcan.Controllers
         // AUTENTICACIÓN Y PERFIL DE USUARIO (TU CÓDIGO RESTAURADO)
         // =======================================================
         public IActionResult login() => View();
+        public IActionResult RegistroExitoso() => View();
         public IActionResult registro() => View();
         public IActionResult registronegocio() => View();
         public IActionResult acercade() => View();
@@ -419,14 +499,11 @@ namespace axcan.Controllers
 
             return RedirectToAction("ConfiguracionDeCuenta");
         }
-
-        // ¡AQUÍ ESTÁ LA CORRECCIÓN DEL ERROR DE RENDER! Le agregamos "async Task<IActionResult>"
-        public async Task<IActionResult> Logout() {
-            HttpContext.Session.Clear();
-            await HttpContext.SignOutAsync("Cookies");
-            return RedirectToAction("login");
-        }
-
+public async Task<IActionResult> Logout() {
+    HttpContext.Session.Clear();
+    await HttpContext.SignOutAsync("Cookies");
+    return RedirectToAction("login");
+}
         private async Task<string> GuardarFile(IFormFile file, string folder)
         {
             string name = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
