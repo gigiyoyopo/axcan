@@ -225,38 +225,57 @@ document.onclick = function checkDay(bool) {
 }
 
 
-
 function displayDate(stringArray) {
     var dateString = "";
-    var dateNumber;
+    var dateNumber = "";
 
     const dateStringElement = document.getElementById("dateString");
+    const idEmpresa = document.getElementById("idEmpresaHidden").value; // <--- Asegúrate de tener este input hidden en tu HTML
 
-
+    // Lógica para armar la fecha según el ID del elemento clicado
     if(stringArray.length == 6) {
-        if(stringArray[2] == "0") {
-            dateString = dateString + week[stringArray[0]] + " " + stringArray[3] + " de " + months[index] + " de 2026";
-        } else {
-            dateString = dateString + week[stringArray[0]] + " " + stringArray[2] + stringArray[3] + " de " + months[index] + " de 2026";
-        }
-    
-        dateNumber = stringArray[2] + "" + stringArray[3] + "/" + (index + 1) + "/2026";
+        let diaNum = stringArray[2] == "0" ? stringArray[3] : stringArray[2] + stringArray[3];
+        dateString = week[stringArray[0]] + " " + diaNum + " de " + months[index] + " de 2026";
+        dateNumber = `2026-${index + 1}-${diaNum}`; // Formato ISO para C#
     } else if(stringArray.length == 7) {
-        if(stringArray[2] == "0") {
-            dateString = dateString + week[stringArray[0] + stringArray[1] + ""] + " " + stringArray[3] + " de " + months[index] + " de 2026";
-        } else {
-            dateString = dateString + week[stringArray[0] + stringArray[1] + ""] + " " + stringArray[3] + stringArray[4] + " de " + months[index] + " de 2026";
-        }
-    
-        dateNumber = stringArray[3] + "" + stringArray[4] + "/" + (index + 1) + "/2026";
-
+        let diaNum = stringArray[3] + stringArray[4];
+        let diaSemanaIndex = parseInt(stringArray[0] + stringArray[1]);
+        dateString = week[diaSemanaIndex] + " " + diaNum + " de " + months[index] + " de 2026";
+        dateNumber = `2026-${index + 1}-${diaNum}`;
     }
-    
 
     dateStringElement.textContent = dateString;
- 
-    enable();
+    
+    // --- AQUÍ CONECTAMOS CON TU C# ---
+    const hourSelect = document.getElementById("hour-select");
+    hourSelect.innerHTML = '<option disabled selected>Buscando horarios...</option>';
+    hourSelect.disabled = true;
 
+    fetch(`/Home/GetHorariosDisponibles?idEmpresa=${idEmpresa}&fecha=${dateNumber}`)
+        .then(res => res.json())
+        .then(data => {
+            enable(); // Reinicia los selects (tu función original)
+            hourSelect.innerHTML = ''; // Limpiamos el "Buscando..."
+
+            if (data.disponibles && data.disponibles.length > 0) {
+                // Si hay horarios, los metemos al select
+                data.disponibles.forEach(hora => {
+                    let opt = document.createElement("option");
+                    opt.value = hora;
+                    opt.text = hora;
+                    hourSelect.appendChild(opt);
+                });
+                // NO lo habilitamos todavía, hasta que elijan servicio (siguiendo la lógica de Axel)
+            } else {
+                let opt = document.createElement("option");
+                opt.text = data.mensaje || "Sin cupo";
+                hourSelect.appendChild(opt);
+            }
+        })
+        .catch(err => {
+            console.error("Error al cargar horarios:", err);
+            hourSelect.innerHTML = '<option>Error al cargar</option>';
+        });
 }
 
 
@@ -285,71 +304,44 @@ let serverSelect = document.getElementById("server-select");
 let accept = document.getElementById("confirm");
 
 function enable() {
-
     a++;
-
+    // Referencias a los selects
     const serviceSelection = document.getElementById("service-select");
     const hourSelection = document.getElementById("hour-select");
     const serverSelection = document.getElementById("server-select");
 
-    serviceSelection.setAttribute("disabled", "true");
-    hourSelection.setAttribute("disabled", "true");
-    serverSelection.setAttribute("disabled", "true");
-    accept.setAttribute("disabled", "true");
+    // Reset de estados
+    serviceSelection.disabled = false; // El servicio siempre debe habilitarse al cambiar de día
+    hourSelection.disabled = true;
+    serverSelection.disabled = true;
+    accept.disabled = true;
 
-    const selectedOption = document.getElementById("selected-option");
-    const selectedOption1 = document.getElementById("selected-option-1");
-    const selectedOption2 = document.getElementById("selected-option-2");
-    
-    selectedOption.remove();
-    selectedOption1.remove();
-    selectedOption2.remove();
-
-    //price.textContent = "Precio:";
-
-    const newSelectedOption = document.createElement("option");
-    const newSelectedOption1 = document.createElement("option");
-    const newSelectedOption2 = document.createElement("option");
-
-    const text = document.createTextNode("Selecciona un servicio");
-    const text1 = document.createTextNode("Selecciona un horario");
-    const text2 = document.createTextNode("Selecciona un servidor");
-
-    serviceSelection.appendChild(newSelectedOption);
-    hourSelection.appendChild(newSelectedOption1);
-    serverSelection.appendChild(newSelectedOption2);
-    
-    newSelectedOption.setAttribute("id", "selected-option");
-    newSelectedOption.setAttribute("value", "null");
-    newSelectedOption.setAttribute("selected", "true");
-    newSelectedOption.setAttribute("disabled", "true");
-
-    newSelectedOption1.setAttribute("id", "selected-option-1");
-    newSelectedOption1.setAttribute("value", "null");
-    newSelectedOption1.setAttribute("selected", "true");
-    newSelectedOption1.setAttribute("disabled", "true");
-
-    newSelectedOption2.setAttribute("id", "selected-option-2");
-    newSelectedOption2.setAttribute("value", "null");
-    newSelectedOption2.setAttribute("selected", "true");
-    newSelectedOption2.setAttribute("disabled", "true");
-    
-    
-    newSelectedOption.appendChild(text);
-    newSelectedOption1.appendChild(text1);
-    newSelectedOption2.appendChild(text2);
+    // Limpiamos los textos de ayuda (Placeholders)
+    limpiarSelect(serviceSelection, "Selecciona un servicio", "selected-option");
+    limpiarSelect(hourSelection, "Selecciona un horario", "selected-option-1");
+    limpiarSelect(serverSelection, "Selecciona un servidor", "selected-option-2");
 
     if(a != 0) {
-
-        serviceSelect.removeAttribute("disabled");
         a = 0;
     }
 }
 
+// Función auxiliar para no repetir código
+function limpiarSelect(elemento, texto, id) {
+    elemento.innerHTML = "";
+    const opt = document.createElement("option");
+    opt.id = id;
+    opt.value = "null";
+    opt.selected = true;
+    opt.disabled = true;
+    opt.text = texto;
+    elemento.appendChild(opt);
+}
 serviceSelect.addEventListener("change", () => {
     console.log("paso 1");
     hourSelect.removeAttribute("disabled");
 });
+
 
 hourSelect.addEventListener("change", () => {
     console.log("paso 2");
@@ -373,3 +365,18 @@ document.addEventListener("load", load());
 
 
 
+// Cerrar con el botón "Cancelar" o la "X"
+function cerrarTodo() {
+    // Si usas el modal de Axel:
+    const modal = document.getElementById("modal");
+    if(modal) modal.style.display = "none";
+    
+    // Si solo quieres resetear colores
+    if(lastCell != "body") {
+        document.getElementById(lastCell).style.backgroundColor = "white";
+        lastCell = "body";
+    }
+}
+
+document.getElementById("cancel").addEventListener("click", cerrarTodo);
+document.getElementById("closeModal").addEventListener("click", cerrarTodo);
