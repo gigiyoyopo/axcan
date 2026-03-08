@@ -302,7 +302,61 @@ let serviceSelect = document.getElementById("service-select");
 let serverSelect = document.getElementById("server-select");
 
 let accept = document.getElementById("confirm");
+async function confirmarReserva() {
+    // 1. Capturamos los datos de la vista
+    const tel = document.getElementById('telCliente').value;
+    const esOtro = document.getElementById('esParaAlguienMas').checked;
+    const nombreOtro = document.getElementById('nombreAlguienMas').value;
+    
+    // 2. Validaciones básicas antes de molestar al servidor
+    if (tel.length !== 10) {
+        alert("¡Epa! El teléfono debe ser de 10 dígitos, ni uno más ni uno menos.");
+        return;
+    }
+    
+    if (esOtro && nombreOtro.trim() === "") {
+        alert("Si es para alguien más, necesito que me digas su nombre, padrino.");
+        return;
+    }
 
+    // 3. Empaquetamos todo para el HomeController
+    const formData = new FormData();
+    
+    // Datos obligatorios para la tabla 'citas' de Supabase
+    formData.append("id_usuario_tramito", document.getElementById('idUsuarioLogueado').value);
+    formData.append("id_empresa", document.getElementById('idEmpresaHidden').value);
+    formData.append("fecha", document.getElementById('fechaSeleccionada').value); // '2026-03-25'
+    formData.append("hora", document.getElementById('horaSeleccionada').value);   // '14:30'
+    formData.append("tipo_servicio", document.getElementById('service-select').value);
+    formData.append("quien_atiende", document.getElementById('server-select').value);
+    
+    // Los extras que pediste para validación
+    formData.append("telefonoCliente", tel);
+    formData.append("esParaAlguienMas", esOtro);
+    formData.append("nombreAlguienMas", nombreOtro);
+
+    
+
+    try {
+        // 4. Mandamos al mensajero (FETCH)
+        const response = await fetch('/Home/AgendarCita', {
+            method: 'POST',
+            body: formData
+        });
+
+        const resultado = await response.json();
+
+        if (resultado.success) {
+            alert("✅ " + resultado.mensaje);
+            location.reload(); // Recargamos para que se vea ocupado el horario
+        } else {
+            alert("❌ Error: " + resultado.mensaje);
+        }
+    } catch (error) {
+        console.error("Error fatal:", error);
+        alert("no pudimos conectar con el servidor.");
+    }
+}
 function enable() {
     a++;
     // Referencias a los selects

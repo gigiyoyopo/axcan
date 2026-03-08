@@ -351,7 +351,42 @@ const close_Modal_Cancel = document.getElementById("cancel");
 close_Modal_Cancel.addEventListener("click", closeModal);
 
 document.addEventListener("load", load());
+// Agrega esto al final de wCal.js
+async function agendarCitaFinal() {
+    const tel = document.getElementById('telCliente').value;
+    const esOtro = document.getElementById('checkAlguienMas').checked;
+    const nombreOtro = document.getElementById('nombreAlguienMas').value;
 
+    // Validación de 10 dígitos (Punto 5 de tu lista)
+    if (tel.length !== 10 || isNaN(tel)) {
+        alert("El teléfono debe ser de 10 dígitos numéricos.");
+        return;
+    }
+
+    const formData = new FormData();
+    // Sacamos los datos de los IDs que ya tienes en wCal.js
+    formData.append("id_usuario_tramito", document.getElementById('UsuarioIdHidden').value);
+    formData.append("id_empresa", document.getElementById('idEmpresaHidden').value);
+    formData.append("fecha", document.getElementById('fecha_seleccionada_oculta').value); 
+    formData.append("hora", document.getElementById('hour-select').value);
+    formData.append("tipo_servicio", document.getElementById('service-select').value);
+    formData.append("quien_atiende", document.getElementById('server-select').value);
+    
+    // Parámetros de validación para el HomeController
+    formData.append("telefonoCliente", tel);
+    formData.append("esParaAlguienMas", esOtro);
+    formData.append("nombreAlguienMas", nombreOtro);
+
+    const resp = await fetch('/Home/AgendarCita', { method: 'POST', body: formData });
+    const res = await resp.json();
+
+    if(res.success) {
+        alert("¡Iguano Exitoso! " + res.mensaje);
+        location.reload();
+    } else {
+        alert("Error: " + res.mensaje);
+    }
+}
 
 
 

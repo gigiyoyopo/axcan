@@ -9,7 +9,7 @@ namespace axcan.Data
             : base(options)
         {
         }
-
+        public DbSet<Expediente> expedientes { get; set; }
         public DbSet<Usuario> usuarios { get; set; }
         public DbSet<Empresa> empresas { get; set; }
         public DbSet<Servicio> servicios { get; set; } 

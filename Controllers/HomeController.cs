@@ -304,18 +304,49 @@ public async Task<IActionResult> GetHorariosDisponibles(int idEmpresa, DateTime 
     return Json(new { disponibles = horasDisponibles });
 }
 //agendar cita
-        [HttpPost]
-public async Task<IActionResult> AgendarCita(Cita nuevaCita)
+[HttpPost]
+public async Task<IActionResult> AgendarCita(Cita nuevaCita, string telefonoCliente, bool esParaAlguienMas, string nombreAlguienMas)
 {
-    // Eliminamos 'fecha_creacion' porque no existe en tu tabla SQL
-    nuevaCita.estatus = "Confirmada";
-    
-    // Asegúrate que desde el JS Axel mande:
-    // id_expediente e id_usuario_tramito porque son NOT NULL
-    
-    _context.citas.Add(nuevaCita);
-    await _context.SaveChangesAsync();
-    return Json(new { success = true, mensaje = "Cita agendada con éxito" });
+    try 
+    {
+        // VALIDACIÓN DE TELÉFONO
+        if (string.IsNullOrEmpty(telefonoCliente) || telefonoCliente.Length != 10)
+            return Json(new { success = false, mensaje = "El teléfono debe ser de 10 dígitos." });
+
+        // LÓGICA ALGUIEN MÁS
+        if (esParaAlguienMas && !string.IsNullOrEmpty(nombreAlguienMas))
+            nuevaCita.tipo_servicio = $"[PARA: {nombreAlguienMas.ToUpper()}] " + nuevaCita.tipo_servicio;
+
+        // BUSCAR O CREAR EXPEDIENTE (id_cliente y fecha_creacion según tu SQL)
+        var expediente = await _context.expedientes
+            .FirstOrDefaultAsync(e => e.id_cliente == nuevaCita.id_usuario_tramito);
+
+        if (expediente == null)
+        {
+            var nuevoExp = new Expediente {
+                id_cliente = nuevaCita.id_usuario_tramito,
+                folio = "EXP-" + DateTime.Now.Ticks.ToString().Substring(10),
+                fecha_creacion = DateTime.Now, // Columna correcta en tu SQL de expedientes
+                descripcion = "Contacto: " + telefonoCliente
+            };
+            _context.expedientes.Add(nuevoExp);
+            await _context.SaveChangesAsync();
+            nuevaCita.id_expediente = nuevoExp.id_expediente;
+        }
+        else {
+            nuevaCita.id_expediente = expediente.id_expediente;
+        }
+
+        // GUARDAR CITA 
+        nuevaCita.estatus = "pendiente";
+        _context.citas.Add(nuevaCita);
+        await _context.SaveChangesAsync();
+
+        return Json(new { success = true, mensaje = "¡Iguano Exitoso! Cita agendada." });
+    }
+    catch (Exception ex) {
+        return Json(new { success = false, mensaje = ex.InnerException?.Message ?? ex.Message });
+    }
 }
         [HttpGet]
         public async Task<JsonResult> GetDatosCalendario(int idEmpresa)

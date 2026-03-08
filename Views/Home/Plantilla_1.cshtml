@@ -39,7 +39,7 @@
                 <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
                     <h5 class="fw-bold mb-3"><i class="bi bi-scissors" style="color: var(--color-marca);"></i> 1. Elige tu Servicio</h5>
                     <select id="select-servicio" class="form-select form-select-lg mb-4">
-                        <option value="">-- Selecciona un servicio --</option>
+                        <option value="">-- Selecciona una servicio --</option>
                         @foreach(var s in ViewBag.Servicios) {
                             <option value="@s.id_servicio" data-precio="@s.precio">@s.nombre_servicio - $@s.precio</option>
                         }
@@ -73,7 +73,7 @@
 
                     <div id="contenedor-horas" class="mb-4 p-4 bg-light rounded-4 text-center border border-dashed">
                         <i class="bi bi-clock-history fs-1 text-muted"></i>
-                        <p class="text-muted mt-2 mb-0">Selecciona una fecha para ver los horarios disponibles.</p>
+                        <p class="text-muted mt-2 mb-0">Selecciona una fecha para ver los horarios disponibles .</p>
                     </div>
 
                     <div id="div-confirmacion" style="display: none;">
