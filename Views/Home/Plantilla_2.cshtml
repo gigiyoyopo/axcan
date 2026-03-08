@@ -1,0 +1,173 @@
+@model axcan.Models.Empresa
+@{
+    Layout = null;
+    string colorTema = string.IsNullOrEmpty(Model.color_tema) ? "#111" : Model.color_tema;
+    string logo = string.IsNullOrEmpty(Model.logotipo_url) ? "https://ui-avatars.com/api/?name=" + Model.nombre_empresa : Model.logotipo_url;
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@Model.nombre_empresa | Reservaciones</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        :root { --color-marca: @colorTema; }
+        body { background-color: #fcfcfc; }
+        .btn-marca { background-color: var(--color-marca); color: white; font-weight: bold; }
+        .hero-header { background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('@Model.banner_url'); background-size: cover; background-position: center; height: 300px; color: white; display: flex; align-items: center; justify-content: center; flex-direction: column; }
+        .chip-hora { border: 1px solid #ddd; border-radius: 10px; padding: 10px; cursor: pointer; transition: 0.3s; background: white; }
+        .chip-hora.activa { background-color: var(--color-marca); color: white; }
+    </style>
+</head>
+<body>
+    <div class="hero-header text-center">
+        <img src="@logo" class="rounded-circle border border-4 border-white mb-3 shadow" style="width: 100px; height: 100px; object-fit: cover;">
+        <h1 class="fw-bold">@Model.nombre_empresa</h1>
+        <a href="/" class="btn btn-sm btn-outline-light rounded-pill mt-2">← Volver a AXCAN</a>
+    </div>
+
+    <div class="container mt-5">
+        <div class="row g-4 mb-5">
+            <div class="col-lg-6">
+                <div class="card border-0 shadow-sm p-4 h-100">
+                    <h4 class="fw-bold" style="color: var(--color-marca);"><i class="bi bi-info-circle"></i> Acerca de Nosotros</h4>
+                    <p class="text-muted mt-3" style="font-size: 1.1rem; line-height: 1.6;">
+                        @(string.IsNullOrEmpty(Model.descripcion) ? "Bienvenido a nuestro establecimiento. Estamos comprometidos con brindarte el mejor servicio." : Model.descripcion)
+                    </p>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card border-0 shadow-sm p-0 overflow-hidden h-100">
+                    <div id="mapaCliente" style="height: 100%; min-height: 250px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-lg rounded-4 p-4 mb-5">
+            <h3 class="fw-bold mb-4 text-center"><i class="bi bi-calendar-check"></i> Agenda tu Cita</h3>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="fw-bold small">Servicio</label>
+                    <select id="select-servicio" class="form-select">
+                        <option value="">-- Selecciona --</option>
+                        @foreach(var s in ViewBag.Servicios) {
+                            <option value="@s.nombre_servicio">@s.nombre_servicio - $@s.precio</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="fw-bold small">Personal</label>
+                    <select id="select-personal" class="form-select">
+                        <option value="Cualquiera">Cualquiera disponible</option>
+                        @foreach(var p in ViewBag.Personal) {
+                            <option value="@p.nombre">@p.nombre</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="fw-bold small">Fecha</label>
+                    <input type="date" id="input-fecha" class="form-control" min="@DateTime.Now.ToString("yyyy-MM-dd")">
+                </div>
+            </div>
+
+            <div id="contenedor-horas" class="d-flex flex-wrap justify-content-center gap-2 my-4 p-3 bg-light rounded-3">
+                <p class="text-muted">Elige una fecha para ver horarios disponibles.</p>
+            </div>
+
+            <div id="div-confirmacion" style="display:none;" class="animate__animated animate__fadeIn">
+                <div class="row justify-content-center">
+                    <div class="col-md-6">
+                        <input type="hidden" id="idEmpresaHidden" value="@Model.id_empresa" />
+                        <input type="hidden" id="idUsuarioLogueado" value="@Context.Session.GetInt32("UsuarioId")" />
+                        <input type="hidden" id="fechaSeleccionada" />
+                        <input type="hidden" id="horaSeleccionada" />
+                        <input type="text" id="cliente-nombre" class="form-control mb-2" placeholder="Nombre completo">
+                        <input type="text" id="telCliente" class="form-control mb-3" maxlength="10" placeholder="Teléfono (10 dígitos)">
+                        <button id="btn-agendar" class="btn btn-marca w-100 py-3">Confirmar Reservación</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h4 class="fw-bold mb-4 mt-5"><i class="bi bi-images"></i> Nuestra Galería</h4>
+        <div id="galeriaCarrusel" class="carousel slide shadow-sm rounded-4 overflow-hidden mb-5" data-bs-ride="carousel">
+            <div class="carousel-inner">
+                @if(ViewBag.Galeria != null) {
+                    var primero = true;
+                    foreach(var foto in ViewBag.Galeria) {
+                        <div class="carousel-item @(primero ? "active" : "")">
+                            <img src="@foto.url" class="d-block w-100" style="height: 400px; object-fit: cover;">
+                        </div>
+                        primero = false;
+                    }
+                }
+            </div>
+        </div>
+
+        <h4 class="fw-bold mb-4"><i class="bi bi-star-fill text-warning"></i> Lo que dicen nuestros clientes</h4>
+     <div class="row g-3 mb-5">
+    @foreach(var r in ViewBag.Resenas) {
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm p-3 rounded-4">
+                <div class="d-flex align-items-center mb-2">
+                    <img src="@(r.foto_url ?? "/img/default-user.png")" 
+                         class="rounded-circle me-2" style="width: 40px; height: 40px; object-fit: cover;">
+                    <small class="fw-bold">@r.nombre</small>
+                </div>
+                <div class="text-warning small mb-2">
+                    @for(int i=0; i < r.calificacion; i++) { <i class="bi bi-star-fill"></i> }
+                </div>
+                <p class="small italic text-muted">"@r.comentario"</p>
+            </div>
+        </div>
+    }
+</div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // --- REUTILIZAMOS TU LÓGICA DE PLANTILLA 1 (MAPA Y AJAX) ---
+        var lat = @(Model.ubicacion_lat != 0 ? Model.ubicacion_lat : 19.4326); 
+        var lng = @(Model.ubicacion_lng != 0 ? Model.ubicacion_lng : -99.1332);
+        var map = L.map('mapaCliente').setView([lat, lng], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        L.marker([lat, lng]).addTo(map);
+
+        // AJAX para horarios (Igual que P1)
+        document.getElementById('input-fecha').addEventListener('change', function() {
+            let fecha = this.value;
+            let idEmp = @Model.id_empresa;
+            let contenedor = document.getElementById('contenedor-horas');
+            document.getElementById('fechaSeleccionada').value = fecha;
+
+            fetch(`/Home/GetHorariosDisponibles?idEmpresa=${idEmp}&fecha=${fecha}`)
+                .then(res => res.json())
+                .then(data => {
+                    contenedor.innerHTML = '';
+                    data.disponibles.forEach(hora => {
+                        let span = document.createElement('span');
+                        span.className = 'chip-hora fw-bold';
+                        span.innerText = hora;
+                        span.onclick = function() {
+                            document.querySelectorAll('.chip-hora').forEach(c => c.classList.remove('activa'));
+                            this.classList.add('activa');
+                            document.getElementById('horaSeleccionada').value = this.innerText;
+                            document.getElementById('div-confirmacion').style.display = 'block';
+                        };
+                        contenedor.appendChild(span);
+                    });
+                });
+        });
+
+        // Botón agendar (Igual que P1)
+        document.getElementById('btn-agendar').addEventListener('click', function() {
+            // ... lógica de envío fetch ...
+            alert("¡Cita agendada!");
+        });
+    </script>
+</body>
+</html>

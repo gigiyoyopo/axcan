@@ -25,6 +25,11 @@
     </style>
 </head>
 <body>
+    <div style="position: absolute; top: 20px; left: 20px; z-index: 1000;">
+        <a href="/" class="btn btn-light shadow-sm rounded-pill px-3 fw-bold text-primary" style="border: 1px solid #dee2e6;">
+            <i class="bi bi-arrow-left"></i> Volver a AXCAN
+        </a>
+    </div>
 
     <div class="hero-header text-center">
         <img src="@logo" class="rounded-circle border border-4 border-white mb-3" style="width: 120px; height: 120px; object-fit: cover;">
@@ -34,22 +39,21 @@
 
     <div class="container mt-5 mb-5">
         <div class="row g-4">
-            
             <div class="col-lg-5">
                 <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
                     <h5 class="fw-bold mb-3"><i class="bi bi-scissors" style="color: var(--color-marca);"></i> 1. Elige tu Servicio</h5>
                     <select id="select-servicio" class="form-select form-select-lg mb-4">
-                        <option value="">-- Selecciona una servicio --</option>
+                        <option value="">-- Selecciona un servicio --</option>
                         @foreach(var s in ViewBag.Servicios) {
-                            <option value="@s.id_servicio" data-precio="@s.precio">@s.nombre_servicio - $@s.precio</option>
+                            <option value="@s.nombre_servicio">@s.nombre_servicio - $@s.precio</option>
                         }
                     </select>
 
                     <h5 class="fw-bold mb-3"><i class="bi bi-person-badge" style="color: var(--color-marca);"></i> 2. ¿Quién te atenderá? (Opcional)</h5>
                     <select id="select-personal" class="form-select form-select-lg">
-                        <option value="">Cualquiera disponible</option>
+                        <option value="Cualquiera">Cualquiera disponible</option>
                         @foreach(var p in ViewBag.Personal) {
-                            <option value="@p.id_secretario">@p.nombre</option>
+                            <option value="@p.nombre">@p.nombre</option>
                         }
                     </select>
                 </div>
@@ -73,15 +77,38 @@
 
                     <div id="contenedor-horas" class="mb-4 p-4 bg-light rounded-4 text-center border border-dashed">
                         <i class="bi bi-clock-history fs-1 text-muted"></i>
-                        <p class="text-muted mt-2 mb-0">Selecciona una fecha para ver los horarios disponibles .</p>
+                        <p class="text-muted mt-2 mb-0">Selecciona una fecha para ver los horarios disponibles.</p>
                     </div>
 
                     <div id="div-confirmacion" style="display: none;">
                         <hr class="my-4">
                         <h5 class="fw-bold mb-3">Tus Datos</h5>
-                        <input type="text" id="cliente-nombre" class="form-control mb-3" placeholder="Tu Nombre Completo" required>
-                        <input type="tel" id="cliente-telefono" class="form-control mb-3" placeholder="Tu Teléfono" required>
-                        <button id="btn-agendar" class="btn btn-marca w-100 py-3 fs-5">Confirmar Cita</button>
+                        
+                        <input type="hidden" id="idEmpresaHidden" value="@Model.id_empresa" />
+                        <input type="hidden" id="idUsuarioLogueado" value="@Context.Session.GetInt32("UsuarioId")" />
+                        <input type="hidden" id="fechaSeleccionada" /> 
+                        <input type="hidden" id="horaSeleccionada" />
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Nombre del Cliente</label>
+                            <input type="text" id="cliente-nombre" class="form-control" placeholder="Tu Nombre Completo" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Teléfono (10 dígitos)</label>
+                            <input type="text" id="telCliente" class="form-control" placeholder="Ej. 5512345678" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '');" required>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="esParaAlguienMas" onchange="document.getElementById('div-otro').style.display = this.checked ? 'block' : 'none'">
+                            <label class="form-check-label" for="esParaAlguienMas">Es para alguien más</label>
+                        </div>
+
+                        <div id="div-otro" class="mb-3" style="display:none;">
+                            <input type="text" id="nombreAlguienMas" class="form-control" placeholder="Nombre de la persona">
+                        </div>
+
+                        <button type="button" id="btn-agendar" class="btn btn-marca w-100 py-3 fs-5">Confirmar Cita</button>
                     </div>
                 </div>
             </div>
@@ -90,12 +117,9 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        let horaSeleccionada = null;
-        let idEmpresa = @Model.id_empresa;
-
         // 1. CARGAR MAPA
-        var lat = @Model.ubicacion_lat != 0 ? @Model.ubicacion_lat : 19.4326; 
-        var lng = @Model.ubicacion_lng != 0 ? @Model.ubicacion_lng : -99.1332;
+        var lat = @(Model.ubicacion_lat != 0 ? Model.ubicacion_lat : 19.4326); 
+        var lng = @(Model.ubicacion_lng != 0 ? Model.ubicacion_lng : -99.1332);
         var map = L.map('mapaCliente').setView([lat, lng], 15);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         L.marker([lat, lng]).addTo(map);
@@ -103,14 +127,13 @@
         // 2. LÓGICA AJAX DEL CALENDARIO
         document.getElementById('input-fecha').addEventListener('change', function() {
             let fecha = this.value;
+            let idEmp = document.getElementById('idEmpresaHidden').value;
             let contenedor = document.getElementById('contenedor-horas');
             
             contenedor.innerHTML = '<div class="spinner-border text-secondary" role="status"></div><p class="mt-2">Buscando horarios...</p>';
             document.getElementById('div-confirmacion').style.display = 'none';
-            horaSeleccionada = null;
 
-            // Llamada silenciosa a tu C#
-            fetch(`/Home/GetHorariosDisponibles?idEmpresa=${idEmpresa}&fecha=${fecha}`)
+            fetch(`/Home/GetHorariosDisponibles?idEmpresa=${idEmp}&fecha=${fecha}`)
                 .then(res => res.json())
                 .then(data => {
                     contenedor.innerHTML = '';
@@ -122,47 +145,76 @@
                             chip.onclick = function() {
                                 document.querySelectorAll('.chip-hora').forEach(c => c.classList.remove('activa'));
                                 this.classList.add('activa');
-                                horaSeleccionada = this.innerText;
+                                document.getElementById('horaSeleccionada').value = this.innerText;
                                 document.getElementById('div-confirmacion').style.display = 'block';
                             };
                             contenedor.appendChild(chip);
                         });
                     } else {
-                        contenedor.innerHTML = `<p class="text-danger fw-bold m-0"><i class="bi bi-x-circle"></i> ${data.mensaje || 'No hay horarios disponibles para este día.'}</p>`;
+                        contenedor.innerHTML = `<p class="text-danger fw-bold m-0"><i class="bi bi-x-circle"></i> ${data.mensaje || 'No hay horarios disponibles.'}</p>`;
                     }
                 });
         });
 
-        // 3. GUARDAR CITA (AJAX POST)
+        // 3. GUARDAR CITA
         document.getElementById('btn-agendar').addEventListener('click', function() {
+            let tel = document.getElementById('telCliente').value;
+            let nombre = document.getElementById('cliente-nombre').value;
             let servicio = document.getElementById('select-servicio').value;
             let fecha = document.getElementById('input-fecha').value;
-            let nombre = document.getElementById('cliente-nombre').value;
+            let hora = document.getElementById('horaSeleccionada').value;
 
-            if(!servicio || !horaSeleccionada || !nombre) {
-                alert("Por favor, completa todos los campos."); return;
+            if(!servicio || !fecha || !hora || !nombre || tel.length !== 10) { 
+                alert("Por favor, completa todos los campos correctamente (Teléfono a 10 dígitos)."); 
+                return; 
             }
 
-            this.disabled = true;
-            this.innerText = "Agendando...";
-
-            // Enviar datos al C# (AgendarCita)
             let formData = new FormData();
-            formData.append('id_empresa', idEmpresa);
-            formData.append('id_servicio', servicio);
-            formData.append('fecha_cita', fecha);
-            formData.append('hora_cita', horaSeleccionada);
-            formData.append('notas', `Cliente: ${nombre} | Tel: ${document.getElementById('cliente-telefono').value}`);
+            formData.append('id_empresa', document.getElementById('idEmpresaHidden').value);
+            formData.append('id_usuario_tramito', document.getElementById('idUsuarioLogueado').value);
+            formData.append('fecha', fecha);
+            formData.append('hora', hora);
+            formData.append('tipo_servicio', servicio);
+            formData.append('quien_atiende', document.getElementById('select-personal').value);
+            formData.append('telefonoCliente', tel);
 
             fetch('/Home/AgendarCita', { method: 'POST', body: formData })
                 .then(res => res.json())
                 .then(data => {
                     if(data.success) {
-                        alert("¡Cita confirmada con éxito! Te esperamos.");
-                        window.location.href = '/'; // Regresa al buscador
+                        alert("✅ " + data.mensaje);
+                        window.location.href = '/';
+                    } else {
+                        alert("❌ " + data.mensaje);
                     }
-                });
+                })
+                .catch(err => alert("Error en el servidor"));
         });
+        <div class="container my-5">
+    <h3 class="fw-bold mb-4 text-center">Opiniones de nuestros clientes</h3>
+    <div class="row g-4">
+        @if(ViewBag.Resenas != null) {
+            foreach(var r in ViewBag.Resenas) {
+                <div class="col-md-4">
+                    <div class="card border-0 shadow-sm p-4 rounded-4 h-100">
+                        <div class="d-flex align-items-center mb-3">
+                            <img src="@(r.foto_url ?? "/img/default-user.png")" 
+                                 class="rounded-circle me-3 shadow-sm" 
+                                 style="width: 50px; height: 50px; object-fit: cover;">
+                            <div>
+                                <h6 class="m-0 fw-bold">@r.nombre</h6>
+                                <div class="text-warning small">
+                                    @for(int i=0; i < r.calificacion; i++) { <i class="bi bi-star-fill"></i> }
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-muted fst-italic">"@r.comentario"</p>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
     </script>
 </body>
 </html>

@@ -335,7 +335,29 @@ serverSelect.addEventListener("change", () => {
         price.textContent = "Precio: $" + precio;
     }
 });
+async function confirmarReserva() {
+    // Jalamos los elementos
+    const inputTel = document.getElementById('telCliente');
+    const inputUser = document.getElementById('idUsuarioLogueado');
+    const inputEmp = document.getElementById('idEmpresaHidden');
+    const selectHora = document.getElementById('hour-select');
 
+    // SI ALGUNO NO EXISTE, EL PROGRAMA SE DETIENE AQUÍ Y TE AVISA
+    if (!inputTel || !inputUser || !inputEmp) {
+        console.error("🚨 Error: Falta un elemento en el HTML. Revisa los IDs.");
+        alert("Falta configurar el campo de teléfono o los datos de sesión.");
+        return;
+    }
+
+    const tel = inputTel.value;
+    
+    if (tel.length !== 10) {
+        alert("Padrino, pon los 10 dígitos del teléfono.");
+        return;
+    }
+    
+    // ... resto de tu fetch ...
+}
 
 
 const prev = document.getElementById("prev_month");

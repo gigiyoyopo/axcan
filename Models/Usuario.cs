@@ -15,9 +15,9 @@ namespace axcan.Models
         public string apellido_paterno { get; set; } = string.Empty;
         public string apellido_materno { get; set; } = string.Empty;
         
-        // Ahora es string para coincidir con el TEXT de SQL
+        
         public string rol { get; set; } = "cliente"; 
-
+public string? foto_url { get; set; } 
         public DateTime? fecha_registro { get; set; } = DateTime.Now;
     }
 }

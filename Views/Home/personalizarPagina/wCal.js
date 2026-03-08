@@ -226,6 +226,8 @@ document.onclick = function checkDay(bool) {
 
 
 function displayDate(stringArray) {
+    dateStringElement.textContent = dateString;
+    document.getElementById('fechaSeleccionada').value = dateNumber;
     var dateString = "";
     var dateNumber = "";
 
@@ -303,10 +305,20 @@ let serverSelect = document.getElementById("server-select");
 
 let accept = document.getElementById("confirm");
 async function confirmarReserva() {
-    // 1. Capturamos los datos de la vista
-    const tel = document.getElementById('telCliente').value;
-    const esOtro = document.getElementById('esParaAlguienMas').checked;
-    const nombreOtro = document.getElementById('nombreAlguienMas').value;
+    // 1. Verificamos que los elementos existan para evitar el error de 'null'
+    const elTel = document.getElementById('telCliente');
+    const elIdUser = document.getElementById('idUsuarioLogueado');
+    const elIdEmp = document.getElementById('idEmpresaHidden');
+    const elFecha = document.getElementById('fechaSeleccionada');
+    const elHora = document.getElementById('hour-select');
+
+    if (!elTel || !elIdUser || !elIdEmp || !elFecha || !elHora) {
+        console.error("🚨 Error: Falta un ID en el HTML. Revisa los inputs hidden.");
+        alert("Error técnico: Elementos de formulario no encontrados.");
+        return;
+    }
+
+    const tel = elTel.value;
     
     // 2. Validaciones básicas antes de molestar al servidor
     if (tel.length !== 10) {
@@ -434,3 +446,18 @@ function cerrarTodo() {
 
 document.getElementById("cancel").addEventListener("click", cerrarTodo);
 document.getElementById("closeModal").addEventListener("click", cerrarTodo);
+
+// Esta función limpia el input en tiempo real
+function validarSoloNumeros(e) {
+    const input = e.target;
+    // Reemplaza cualquier cosa que NO sea número con nada
+    input.value = input.value.replace(/[^0-9]/g, '');
+    
+    // Si se pasa de 10, lo corta
+    if (input.value.length > 10) {
+        input.value = input.value.slice(0, 10);
+    }
+}
+
+// Escuchamos cuando el usuario escribe en el teléfono
+document.getElementById('telCliente').addEventListener('input', validarSoloNumeros);
