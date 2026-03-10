@@ -70,7 +70,7 @@
                     </div>
 
                     <div class="mt-5 d-flex gap-3">
-                        <button type="submit" class="btn btn-primary btn-lg px-5 fw-bold shadow">
+                        <button type="submit" class="btn btn-primary btn-lg px-5 fw-bold shadow" onclick="this.disabled=true;this.form.submit();">
                             <i class="bi bi-check-circle"></i> Finalizar Registro
                         </button>
                         <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary btn-lg">Cancelar</a>

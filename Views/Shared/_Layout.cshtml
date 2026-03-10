@@ -35,7 +35,15 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link" asp-controller="Home" asp-action="acercade">Acerca de Koi Labs</a>
+             <li class="nav-item">
+    <a class="nav-link" asp-controller="Home" asp-action="AcercaDe">Acerca de Koi Labs</a>
+</li>
+@if (Context.Session.GetString("UsuarioRol") == "empleado" || ViewBag.EsStaff == true)
+{
+    <a asp-action="Secretario" class="btn btn-warning rounded-pill px-4 shadow-sm">
+        <i class="bi bi-person-badge"></i> Panel de Trabajo
+    </a>
+}
                     </li>
                 </ul>
                 

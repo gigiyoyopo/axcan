@@ -16,6 +16,7 @@
                             <input type="file" name="fotoPerfil" hidden onchange="this.form.submit()">
                         </label>
                     </div>
+                    
                     <h4 class="fw-bold">@Model.nombre</h4>
                     <p class="text-muted small">@Model.rol.ToUpper()</p>
                     
@@ -32,35 +33,39 @@
 
         <div class="col-lg-8">
             <div class="card border-0 shadow-sm p-4 rounded-4">
-                <h4 class="fw-bold mb-4"><i class="bi bi-calendar3"></i> Mi Agenda</h4>
+                <h4 class="fw-bold mb-4"><i class="bi bi-calendar3"></i> Mi Agenda y Expedientes</h4>
                 <div class="table-responsive">
                     <table class="table align-middle">
                         <thead class="table-light">
                             <tr>
+                                <th>Folio</th>
                                 <th>Negocio</th>
-                                <th>Fecha</th>
+                                <th>Fecha/Hora</th>
                                 <th>Estado</th>
-                                <th></th>
+                                <th>Acción</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach(var cita in ViewBag.MisCitas) {
-                                <tr>
-                                    <td><strong>@cita.nombre_empresa</strong></td>
-                                    <td>@cita.fecha.ToShortDateString() <br> <small>@cita.hora</small></td>
-                                    <td>
-                                        <span class="badge @(cita.estatus == "Cancelada" ? "bg-danger" : "bg-warning text-dark")">
-                                            @cita.estatus
-                                        </span>
-                                    </td>
-                                    <td class="text-end">
-                                        @if(cita.estatus == "pendiente") {
-                                            <button onclick="cancelarCita(@cita.id_cita)" class="btn btn-sm btn-outline-danger">
-                                                Cancelar
-                                            </button>
-                                        }
-                                    </td>
-                                </tr>
+                            @if(ViewBag.MisCitas != null) {
+                                foreach(var cita in ViewBag.MisCitas) {
+                                    <tr>
+                                        <td><span class="badge bg-dark">@cita.folio</span></td>
+                                        <td><strong>@cita.nombre_empresa</strong></td>
+                                        <td>@cita.fecha.ToShortDateString() <br> <small>@cita.hora</small></td>
+                                        <td>
+                                            <span class="badge @(cita.estatus == "Cancelada" ? "bg-danger" : "bg-warning text-dark")">
+                                                @cita.estatus
+                                            </span>
+                                        </td>
+                                        <td class="text-end">
+                                            @if(cita.estatus == "pendiente") {
+                                                <button onclick="cancelarCita(@cita.id_cita)" class="btn btn-sm btn-outline-danger">
+                                                    Cancelar
+                                                </button>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
                             }
                         </tbody>
                     </table>
