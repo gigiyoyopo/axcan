@@ -377,5 +377,239 @@ document.addEventListener("DOMContentLoaded", function() {
         });
 });
     </script>
+
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
+    
+    <script>
+        var xValues = ["Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sábado"];
+        var yValues = [55, 49, 44, 24, 15, 10, 15];
+        var barColors = ["red", "green","blue","orange","brown", "pink", "white"];
+
+
+        const barChart1 = new Chart("grafica-semana-actual", {
+        type: "bar",
+        data: {
+            labels: xValues,
+            datasets: [{
+            backgroundColor: barColors,
+            data: yValues
+            }]
+        },
+        options: {
+            scales: {
+                xAxes: [{
+                    time: {
+                    unit: 'number'
+                    },
+                    gridLines: {
+                    display: false
+                    },
+                    ticks: {
+                    maxTicksLimit: 6
+                    }
+                }],
+                yAxes: [{
+                    ticks: {
+                    min: 1,
+                    //max: 50,
+                    maxTicksLimit: 5
+                    },
+                    gridLines: {
+                    display: true
+                    }
+                }],
+            },
+            legend: {display: false},
+            title: {
+            display: true,
+            text: ""
+            }
+        }
+        });
+    </script>
+
+
+    <script>
+
+                
+        var xValues = ["Citas agendadas", "Citas canceladas"];
+        var yValues = [55, 49];
+        var barColors = [
+        "#b91d47",
+        "#00aba9"
+        ];
+
+        const pieChart = new Chart("grafica-citas_canceladas", {
+        type: "pie",
+        data: {
+            labels: xValues,
+            datasets: [{
+            backgroundColor: barColors,
+            data: yValues
+            }]
+        },
+        options: {
+            title: {
+            display: true,
+            text: ""
+            }
+        }
+        });
+    </script>
+
+
+
+    <script>
+        var xValues = ["Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sábado"];
+        var yValues = [55, 49, 44, 24, 15, 10, 5];
+        var barColors = ["red", "green","blue","orange","brown", "pink", "white"];
+
+
+        const barChart2 = new Chart("grafica-dia_popular", {
+        type: "bar",
+        data: {
+            labels: xValues,
+            datasets: [{
+            backgroundColor: barColors,
+            data: yValues
+            }]
+        },
+        options: {
+            scales: {
+                xAxes: [{
+                    time: {
+                    unit: 'number'
+                    },
+                    gridLines: {
+                    display: false
+                    },
+                    ticks: {
+                    maxTicksLimit: 6
+                    }
+                }],
+                yAxes: [{
+                    ticks: {
+                    min: 1,
+                    maxTicksLimit: 5
+                    },
+                    gridLines: {
+                    display: true
+                    }
+                }],
+            },
+            legend: {display: false},
+            title: {
+            display: true,
+            text: ""
+            }
+        }
+        });
+    </script>
+
+    <script>
+
+        let estado = 0;
+
+
+        const botonCitasSemana = document.getElementById("btn-semana_actual");
+        botonCitasSemana.addEventListener("click", () => {
+        estado = 1;
+        mostrarGrafica(estado);
+        });
+
+
+        const botonCitasCanceladas = document.getElementById("btn-citas_canceladas");
+        botonCitasCanceladas.addEventListener("click", () => {
+        estado = 2;
+        mostrarGrafica(estado);
+        });
+
+
+        const botonCitasTotales = document.getElementById("btn-dia_popular");
+        botonCitasTotales.addEventListener("click", () => {
+        estado = 3;
+        mostrarGrafica(estado);
+        });
+
+
+        function mostrarGrafica(estado) {
+
+            const btnCitasSemana = document.getElementById("btn-semana_actual");
+            const btnCitasCanceladas = document.getElementById("btn-citas_canceladas");
+            const btnCitasTotales = document.getElementById("btn-dia_popular");
+            
+            const divGraficaCitasSemana = document.getElementById("grafica_barras-citas-semana_actual");
+            const divGraficaProporcionCancelar = document.getElementById("grafica_pastel-citas-canceladas");
+            const divGraficaDiaPopular = document.getElementById("grafica_barras-dia_mas_popular");
+            
+
+            const pt = "padding-top"
+
+            if(estado == 1) {
+                btnCitasSemana.removeAttribute("class");
+                btnCitasSemana.setAttribute("class", "btn btn-primary active");
+
+                btnCitasCanceladas.removeAttribute("class");
+                btnCitasCanceladas.setAttribute("class", "btn btn-primary");
+
+                btnCitasTotales.removeAttribute("class");
+                btnCitasTotales.setAttribute("class", "btn btn-primary");
+
+
+                divGraficaCitasSemana.style.display = "block";
+                divGraficaProporcionCancelar.style.display = "none";
+                divGraficaDiaPopular.style.display = "none";
+
+                /*divGraficaCitasSemana.style.paddingTop = "5px"
+                divGraficaProporcionCancelar.style.paddingTop = "5px";
+                divGraficaDiaPopular.style.paddingTop = "5px";*/
+
+
+                console.warn(estado);
+            } else if(estado == 2) {
+
+                btnCitasSemana.removeAttribute("class");
+                btnCitasSemana.setAttribute("class", "btn btn-primary");
+
+                btnCitasCanceladas.removeAttribute("class");
+                btnCitasCanceladas.setAttribute("class", "btn btn-primary active");
+
+                btnCitasTotales.removeAttribute("class");
+                btnCitasTotales.setAttribute("class", "btn btn-primary");
+
+
+                divGraficaCitasSemana.style.display = "none";
+                divGraficaProporcionCancelar.style.display = "block";
+                divGraficaDiaPopular.style.display = "none";
+
+
+                console.warn(estado);
+            } else if(estado == 3) {
+                
+                btnCitasSemana.removeAttribute("class");
+                btnCitasSemana.setAttribute("class", "btn btn-primary");
+
+                btnCitasCanceladas.removeAttribute("class");
+                btnCitasCanceladas.setAttribute("class", "btn btn-primary");
+
+                btnCitasTotales.removeAttribute("class");
+                btnCitasTotales.setAttribute("class", "btn btn-primary active");
+
+
+                divGraficaCitasSemana.style.display = "none";
+                divGraficaProporcionCancelar.style.display = "none";
+                divGraficaDiaPopular.style.display = "block";
+
+
+                console.warn(estado);
+            } else {
+
+                console.error("El estado es desconocido\n" + estado);
+            }
+        }
+    </script>
+    
 </body>
 </html>
