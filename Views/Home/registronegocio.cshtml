@@ -19,8 +19,7 @@
 
             <div class="card shadow-lg border-0 p-4" style="border-radius: 20px;">
                 @* IMPORTANTE: El enctype permite subir archivos *@
-                <form asp-controller="Home" asp-action="GuardarEmpresa" method="POST" enctype="multipart/form-data">
-                    
+<form asp-action="ProcesarRegistroNegocio" method="post" enctype="multipart/form-data">                    
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label fw-bold">Nombre del Negocio</label>
@@ -71,7 +70,7 @@
                     </div>
 
                     <div class="mt-5 d-flex gap-3">
-                        <button type="submit" class="btn btn-primary btn-lg px-5 fw-bold shadow">
+                        <button type="submit" class="btn btn-primary btn-lg px-5 fw-bold shadow" onclick="this.disabled=true;this.form.submit();">
                             <i class="bi bi-check-circle"></i> Finalizar Registro
                         </button>
                         <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary btn-lg">Cancelar</a>

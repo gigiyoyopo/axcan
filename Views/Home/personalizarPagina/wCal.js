@@ -226,6 +226,8 @@ document.onclick = function checkDay(bool) {
 
 
 function displayDate(stringArray) {
+    dateStringElement.textContent = dateString;
+    document.getElementById('fechaSeleccionada').value = dateNumber;
     var dateString = "";
     var dateNumber = "";
 
@@ -302,7 +304,71 @@ let serviceSelect = document.getElementById("service-select");
 let serverSelect = document.getElementById("server-select");
 
 let accept = document.getElementById("confirm");
+async function confirmarReserva() {
+    // 1. Verificamos que los elementos existan para evitar el error de 'null'
+    const elTel = document.getElementById('telCliente');
+    const elIdUser = document.getElementById('idUsuarioLogueado');
+    const elIdEmp = document.getElementById('idEmpresaHidden');
+    const elFecha = document.getElementById('fechaSeleccionada');
+    const elHora = document.getElementById('hour-select');
 
+    if (!elTel || !elIdUser || !elIdEmp || !elFecha || !elHora) {
+        console.error("🚨 Error: Falta un ID en el HTML. Revisa los inputs hidden.");
+        alert("Error técnico: Elementos de formulario no encontrados.");
+        return;
+    }
+
+    const tel = elTel.value;
+    
+    // 2. Validaciones básicas antes de molestar al servidor
+    if (tel.length !== 10) {
+        alert("¡Epa! El teléfono debe ser de 10 dígitos, ni uno más ni uno menos.");
+        return;
+    }
+    
+    if (esOtro && nombreOtro.trim() === "") {
+        alert("Si es para alguien más, necesito que me digas su nombre, padrino.");
+        return;
+    }
+
+    // 3. Empaquetamos todo para el HomeController
+    const formData = new FormData();
+    
+    // Datos obligatorios para la tabla 'citas' de Supabase
+    formData.append("id_usuario_tramito", document.getElementById('idUsuarioLogueado').value);
+    formData.append("id_empresa", document.getElementById('idEmpresaHidden').value);
+    formData.append("fecha", document.getElementById('fechaSeleccionada').value); // '2026-03-25'
+    formData.append("hora", document.getElementById('horaSeleccionada').value);   // '14:30'
+    formData.append("tipo_servicio", document.getElementById('service-select').value);
+    formData.append("quien_atiende", document.getElementById('server-select').value);
+    
+    // Los extras que pediste para validación
+    formData.append("telefonoCliente", tel);
+    formData.append("esParaAlguienMas", esOtro);
+    formData.append("nombreAlguienMas", nombreOtro);
+
+    
+
+    try {
+        // 4. Mandamos al mensajero (FETCH)
+        const response = await fetch('/Home/AgendarCita', {
+            method: 'POST',
+            body: formData
+        });
+
+        const resultado = await response.json();
+
+        if (resultado.success) {
+            alert("✅ " + resultado.mensaje);
+            location.reload(); // Recargamos para que se vea ocupado el horario
+        } else {
+            alert("❌ Error: " + resultado.mensaje);
+        }
+    } catch (error) {
+        console.error("Error fatal:", error);
+        alert("no pudimos conectar con el servidor.");
+    }
+}
 function enable() {
     a++;
     // Referencias a los selects
@@ -380,3 +446,18 @@ function cerrarTodo() {
 
 document.getElementById("cancel").addEventListener("click", cerrarTodo);
 document.getElementById("closeModal").addEventListener("click", cerrarTodo);
+
+// Esta función limpia el input en tiempo real
+function validarSoloNumeros(e) {
+    const input = e.target;
+    // Reemplaza cualquier cosa que NO sea número con nada
+    input.value = input.value.replace(/[^0-9]/g, '');
+    
+    // Si se pasa de 10, lo corta
+    if (input.value.length > 10) {
+        input.value = input.value.slice(0, 10);
+    }
+}
+
+// Escuchamos cuando el usuario escribe en el teléfono
+document.getElementById('telCliente').addEventListener('input', validarSoloNumeros);

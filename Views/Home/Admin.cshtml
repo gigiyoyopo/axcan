@@ -2,6 +2,7 @@
 @{
     Layout = null;
     string rolActual = ViewBag.RolLocal as string ?? "administrador";
+    var listaCitas = ViewBag.Citas as List<axcan.Models.Cita>;
 }
 <!DOCTYPE html>
 <html lang="es" data-bs-theme="dark">
@@ -21,34 +22,28 @@
             --dark-axcan: #1a1a1a;
             --gray-axcan: #2d2d2d;
         }
-        body { background-color: #0f0f0f; color: #fff; transition: all 0.3s ease; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #0f0f0f; color: #fff; transition: all 0.3s ease; font-family: 'Segoe UI', sans-serif; }
         
-        /* SIDEBAR PREMIUM */
         .sidebar { width: var(--sidebar-width); height: 100vh; position: fixed; top: 0; left: 0; z-index: 1000; background: var(--dark-axcan); border-right: 1px solid #333; }
         .main-content { margin-left: var(--sidebar-width); padding: 30px; }
         .nav-link { color: #888; margin: 8px 15px; border-radius: 8px; padding: 12px; transition: 0.2s; }
         .nav-link:hover, .nav-link.active { background: rgba(212, 175, 55, 0.1); color: var(--gold-axcan) !important; font-weight: bold; border-left: 3px solid var(--gold-axcan); }
 
-        /* COMPONENTES AXCAN */
         .card-custom { background-color: var(--gray-axcan); border: 1px solid #333; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .axcan-input { background-color: #111; border: 1px solid #444; color: white; border-radius: 8px; padding: 10px; }
-        .axcan-input:focus { border-color: var(--gold-axcan); box-shadow: 0 0 0 0.2rem rgba(212, 175, 55, 0.2); background-color: #1a1a1a; color: white; }
-        .btn-gold { background-color: var(--gold-axcan); color: #000; font-weight: bold; border: none; border-radius: 8px; }
+        .btn-gold { background-color: var(--gold-axcan); color: #000; font-weight: bold; border: none; border-radius: 8px; transition: 0.3s; }
         .btn-gold:hover { background-color: #bfa030; transform: translateY(-2px); }
 
-        /* TARJETAS DE PLANTILLA */
-        .template-card { border: 2px solid #444; border-radius: 12px; cursor: pointer; transition: all 0.3s; background: #111; text-align: center; padding: 15px; }
-        .template-radio:checked + .template-card { border-color: var(--gold-axcan); background: rgba(212, 175, 55, 0.05); }
-        .template-radio:checked + .template-card h6 { color: var(--gold-axcan) !important; }
-
         .admin-section { display: none; }
-        .admin-section.active { display: flex; animation: fadeIn 0.4s; }
+        .admin-section.active { display: block; animation: fadeIn 0.4s; }
         @@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .phone-mockup { border: 10px solid #333; border-radius: 40px; height: 780px; position: sticky; top: 20px; background: #000; overflow: hidden; }
     </style>
 </head>
 <body>
 
-    <nav class="sidebar shadow" id="sidebar">
+    <nav class="sidebar shadow">
         <div class="p-4 text-center border-bottom border-secondary">
             <h3 class="fw-bold mb-1" style="color: var(--gold-axcan); letter-spacing: 2px;">AXCAN</h3>
             <span class="badge bg-dark border border-warning text-warning rounded-pill">@rolActual.ToUpper()</span>
@@ -58,9 +53,9 @@
             @if(rolActual == "administrador") {
                 <a href="#stats" class="nav-link active"><i class="bi bi-graph-up-arrow me-2"></i> Dashboard</a>
                 <a href="#personal" class="nav-link"><i class="bi bi-people me-2"></i> Personal</a>
-                <a href="#servicios" class="nav-link"><i class="bi bi-scissors me-2"></i> Catálogo / Servicios</a>
-                <a href="#horarios" class="nav-link"><i class="bi bi-clock me-2"></i> Horarios Negocio</a>
-                <a href="#configuracion" class="nav-link"><i class="bi bi-palette me-2"></i> Personalizar Portal</a>
+                <a href="#servicios" class="nav-link"><i class="bi bi-scissors me-2"></i> Servicios</a>
+                <a href="#horarios" class="nav-link"><i class="bi bi-clock me-2"></i> Horarios</a>
+                <a href="#configuracion" class="nav-link"><i class="bi bi-palette me-2"></i> Personalizar</a>
             } else {
                 <a href="#calendario-secretario" class="nav-link active"><i class="bi bi-calendar-month me-2"></i> Gestión de Citas</a>
             }
@@ -71,262 +66,316 @@
     </nav>
 
     <main class="main-content">
-        <header class="d-flex justify-content-between align-items-center mb-5">
-            <h4 class="fw-bold m-0 text-white">Panel de Control <span style="color: var(--gold-axcan);">@Model.nombre_empresa</span></h4>
+        <header class="mb-5">
+            <h4 class="fw-bold text-white">Panel de Control <span style="color: var(--gold-axcan);">@Model.nombre_empresa</span></h4>
         </header>
 
-        @if(rolActual == "administrador")
-        {
-            <div class="row g-4 admin-section active" id="stats">
-                <div class="col-md-4">
-                    <div class="card card-custom p-4 text-center">
-                        <h6 class="text-muted fw-bold">CITAS DEL MES</h6>
-                        <h1 class="fw-bold" style="color: var(--gold-axcan);">124</h1>
-                    </div>
-                </div>
-                <div class="col-md-8">
-                    <div class="card card-custom p-4 text-center" style="height: 100%;">
-                        <h5 class="fw-bold" style="color: var(--gold-axcan);">Estadísticas</h5>
-                        <div class="btn-group" role="group" aria-label="Basic example" style="width: 80%; margin: auto;">
-                            <button type="button" class="btn btn-primary active" id="btn-semana_actual">Citas esta semana</button>
-                            <button type="button" class="btn btn-primary" id="btn-citas_canceladas">Proporción de citas canceladas</button>
-                            <button type="button" class="btn btn-primary" id="btn-dia_popular">Días más populares</button>
-                        </div>    
-                    </div>
-                </div>
-            </div>
-
-            <div class="row admin-section active" id="grafica_barras-citas-semana_actual" style="padding-top: 5px;">
-                <div class="col-12">
-                    <div class="card card-custom p-4 text-center">
-                        <h4 class="fw-bold" style="color: var(--gold-axcan);">Citas esta semana</h4>
-                                <div class="p-3 mb-2 border border-secondary rounded text-start" style="background: #111; border-left: 4px solid var(--gold-axcan) !important;">
-                                
-                                    <canvas id="grafica-semana-actual" style="width:100%;max-width:700px; margin: auto"></canvas>
-                                
-                                </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row admin-section active" id="grafica_pastel-citas-canceladas" style="padding-top: 5px; display: none;">
-                <div class="col-12">
-                    <div class="card card-custom p-4 text-center">
-                        <h4 class="fw-bold" style="color: var(--gold-axcan);">Proporcion de citas canceladas</h4>
-                                <div class="p-3 mb-2 border border-secondary rounded text-start" style="background: #111; border-left: 4px solid var(--gold-axcan) !important;">
-                                
-                                    <canvas id="grafica-citas_canceladas" style="width:100%;max-width:700px; margin: auto"></canvas>
-                                
-                                </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row admin-section active" id="grafica_barras-dia_mas_popular" style="padding-top: 5px; display: none;">
-                <div class="col-12">
-                    <div class="card card-custom p-4 text-center">
-                        <h4 class="fw-bold" style="color: var(--gold-axcan);">Días con más citas</h4>
-                                <div class="p-3 mb-2 border border-secondary rounded text-start" style="background: #111; border-left: 4px solid var(--gold-axcan) !important;">
-                                
-                                    <canvas id="grafica-dia_popular" style="width:100%;max-width:700px; margin: auto"></canvas>
-                                
-                                </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row g-4 admin-section" id="configuracion">
-                <div class="col-12">
-                    <div class="card card-custom border-0 p-5 rounded-4">
-                        <h4 class="fw-bold mb-4" style="color: var(--gold-axcan);"><i class="bi bi-brush"></i> Personaliza tu Página Pública</h4>
-                        <form asp-action="EditarNegocio" method="post" enctype="multipart/form-data">
-                            <input type="hidden" asp-for="id_empresa" />
-                            
-                            <div class="row g-5">
-                                <div class="col-lg-6">
-                                    <div class="mb-4">
-                                        <label class="form-label text-muted small fw-bold">Nombre del Negocio</label>
-                                        <input type="text" asp-for="nombre_empresa" class="form-control axcan-input">
-                                    </div>
-                                    <div class="mb-4">
-                                        <label class="form-label text-muted small fw-bold">Nuestra Historia / Quiénes Somos</label>
-                                        <textarea asp-for="descripcion" class="form-control axcan-input" rows="4" placeholder="Atendiendo desde 1990..."></textarea>
-                                    </div>
-                                    <div class="mb-4">
-                                        <label class="form-label text-muted small fw-bold">Color Principal de la Marca</label>
-                                        <input type="color" asp-for="color_tema" class="form-control form-control-color w-100 axcan-input" style="height: 50px;">
-                                    </div>
-                                    <div class="mb-4">
-                                        <label class="form-label text-muted small fw-bold">Sube tu Logotipo</label>
-                                        <input type="file" name="logoArchivo" class="form-control axcan-input">
-                                    </div>
-                                </div>
-
-                                <div class="col-lg-6">
-                                    <label class="form-label text-muted small fw-bold mb-3">Elige la Plantilla Estructural</label>
-                                    <div class="row g-3 mb-4">
-                                        <div class="col-6">
-                                            <input type="radio" asp-for="id_plantilla" value="1" class="d-none template-radio" id="p1">
-                                            <label class="template-card w-100" for="p1">
-                                                <i class="bi bi-layout-sidebar text-muted fs-1 mb-2"></i>
-                                                <h6 class="text-white fw-bold m-0">Diseño Clásico</h6>
-                                                <small class="text-muted">Calendario a la Izquierda</small>
-                                            </label>
-                                        </div>
-                                        <div class="col-6">
-                                            <input type="radio" asp-for="id_plantilla" value="2" class="d-none template-radio" id="p2">
-                                            <label class="template-card w-100" for="p2">
-                                                <i class="bi bi-layout-text-window text-muted fs-1 mb-2"></i>
-                                                <h6 class="text-white fw-bold m-0">Diseño Moderno</h6>
-                                                <small class="text-muted">Calendario Centrado</small>
-                                            </label>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="mb-4">
-                                        <label class="form-label text-muted small fw-bold">Ubicación GPS</label>
-                                        <div id="mapaAdmin" style="height: 200px; border-radius: 10px;" class="border border-secondary"></div>
-                                        <input type="hidden" id="lat" asp-for="ubicacion_lat">
-                                        <input type="hidden" id="lng" asp-for="ubicacion_lng">
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <hr class="border-secondary my-4">
-                            <button type="submit" class="btn btn-gold w-100 py-3 fs-5">Guardar Cambios y Publicar</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row g-4 admin-section" id="horarios">
-                <div class="col-12">
-                    <div class="card card-custom p-5">
-                        <h4 class="fw-bold mb-4" style="color: var(--gold-axcan);"><i class="bi bi-clock"></i> Horarios de Operación</h4>
-                        <form asp-action="GuardarHorarios" method="post">
-                            <input type="hidden" name="id_empresa" value="@Model.id_empresa" />
-                            <table class="table table-dark table-borderless align-middle">
-                                <thead>
-                                    <tr class="text-muted small"><th>Día</th><th>Apertura</th><th>Cierre</th><th>¿Descanso?</th></tr>
-                                </thead>
-                                <tbody>
-                                    @{ string[] dias = { "Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado" }; }
-                                    @for (int i = 0; i < 7; i++)
-                                    {
-                                        <tr>
-                                            <td class="fw-bold">@dias[i]</td>
-                                            <td><input type="time" name="apertura_@i" class="form-control axcan-input w-75" value="09:00"></td>
-                                            <td><input type="time" name="cierre_@i" class="form-control axcan-input w-75" value="18:00"></td>
-                                            <td><div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="descanso_@i"></div></td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                            <button type="submit" class="btn btn-gold w-100 mt-3">Guardar Calendario Base</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row g-4 admin-section" id="servicios">
-                <div class="col-12">
-                    <div class="card card-custom p-5">
-                        <div class="d-flex justify-content-between mb-4">
-                            <h4 class="fw-bold m-0" style="color: var(--gold-axcan);">Catálogo de Servicios</h4>
-                            <button class="btn btn-gold" data-bs-toggle="modal" data-bs-target="#modalAddServicio">+ Nuevo</button>
+        @if(rolActual == "administrador") {
+            <div class="admin-section active" id="stats">
+                <div class="row g-4 mb-4">
+                    <div class="col-md-4">
+                        <div class="card card-custom p-4 text-center">
+                            <h6 class="text-muted fw-bold small">CITAS TOTALES</h6>
+                            <h1 class="fw-bold" style="color: var(--gold-axcan);">@(listaCitas?.Count ?? 0)</h1>
                         </div>
-                        <ul class="list-group list-group-flush bg-transparent">
-                            @if(ViewBag.Servicios != null) {
-                                foreach(var s in ViewBag.Servicios) {
-                                    <li class="list-group-item bg-transparent text-white border-secondary d-flex justify-content-between align-items-center p-3">
-                                        <div><strong>@s.nombre_servicio</strong> <br> <small class="text-muted">@s.duracion_minutos minutos</small></div>
-                                        <span class="fs-5 fw-bold" style="color: var(--gold-axcan);">$@s.precio</span>
-                                    </li>
+                        <div class="card card-custom p-4 mt-3">
+                            <h5 class="fw-bold small mb-3">Filtros</h5>
+                            <button class="btn btn-primary btn-sm w-100 mb-2" id="btn-grafica-citas">Ver Citas</button>
+                            <button class="btn btn-outline-danger btn-sm w-100 mb-2" id="btn-grafica-cancelaciones">Ver Cancelaciones</button>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="card card-custom p-4" style="min-height: 400px;">
+                            <canvas id="grafica-principal"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="admin-section" id="personal">
+                <div class="card card-custom p-5">
+                    <div class="d-flex justify-content-between mb-4">
+                        <h4 class="fw-bold" style="color: var(--gold-axcan);">Equipo de Trabajo</h4>
+                        <button class="btn btn-gold" data-bs-toggle="modal" data-bs-target="#modalAddEquipo">+ Vincular Staff</button>
+                    </div>
+                    <table class="table table-dark table-hover align-middle">
+                        <tbody>
+                            @if(ViewBag.Personal != null) {
+                                foreach(var p in ViewBag.Personal) {
+                                    <tr>
+                                        <td><strong>@p.nombre</strong><br><small class="text-muted">@@@p.username</small></td>
+                                        <td><span class="badge bg-secondary border border-warning text-warning">@p.subrol.ToUpper()</span></td>
+                                        <td class="text-end"><button class="btn btn-sm btn-outline-danger">Remover</button></td>
+                                    </tr>
                                 }
                             }
-                        </ul>
-                    </div>
+                        </tbody>
+                    </table>
                 </div>
             </div>
-            
-            <div class="row g-4 admin-section" id="personal">
-                <div class="col-12">
-                    <div class="card card-custom p-5">
-                        <div class="d-flex justify-content-between mb-4">
-                            <h4 class="fw-bold m-0" style="color: var(--gold-axcan);">Gestión de Equipo</h4>
-                            <button class="btn btn-gold" data-bs-toggle="modal" data-bs-target="#modalAddEquipo">+ Vincular Usuario</button>
-                        </div>
-                        <table class="table table-dark table-hover align-middle bg-transparent">
-                            <tbody>
-                                @if(ViewBag.Personal != null) {
-                                    foreach(var p in ViewBag.Personal) {
-                                        <tr>
-                                            <td><strong>@p.nombre</strong><br><small class="text-muted">@@@p.username</small></td>
-                                            <td><span class="badge bg-secondary border border-warning text-warning">@p.subrol.ToUpper()</span></td>
-                                            <td class="text-end"><button class="btn btn-sm btn-outline-danger">Remover</button></td>
-                                        </tr>
-                                    }
-                                }
-                            </tbody>
-                        </table>
+
+            <div class="admin-section" id="servicios">
+                <div class="card card-custom p-5">
+                    <div class="d-flex justify-content-between mb-4">
+                        <h4 class="fw-bold" style="color: var(--gold-axcan);">Catálogo de Servicios</h4>
+                        <button class="btn btn-gold" data-bs-toggle="modal" data-bs-target="#modalAddServicio">+ Nuevo Servicio</button>
                     </div>
-                </div>
-            </div>
-        }
-        else 
-        {
-            <div class="row admin-section active" id="calendario-secretario">
-                <div class="col-12">
-                    <div class="card card-custom p-4 text-center">
-                        <h4 class="fw-bold" style="color: var(--gold-axcan);">Agenda en Vivo</h4>
-                        <p class="text-muted">Las citas de hoy</p>
-                        @if(ViewBag.Citas != null) {
-                            foreach(var c in ViewBag.Citas) {
-                                <div class="p-3 mb-2 border border-secondary rounded text-start" style="background: #111; border-left: 4px solid var(--gold-axcan) !important;">
-                                    <h6 class="fw-bold mb-1">Cita a las @c.hora_cita</h6>
-                                    <small class="text-muted">Estatus: @c.estatus</small>
+                    <div class="list-group">
+                        @if(ViewBag.Servicios != null) {
+                            foreach(var s in ViewBag.Servicios) {
+                                <div class="list-group-item bg-transparent text-white border-secondary d-flex justify-content-between align-items-center">
+                                    <div><strong>@s.nombre_servicio</strong> <br><small class="text-muted">@s.duracion_minutos min</small></div>
+                                    <span class="fw-bold text-warning fs-5">$@s.precio</span>
                                 </div>
                             }
                         }
                     </div>
                 </div>
             </div>
+<div class="row g-4 admin-section" id="horarios">
+    <div class="col-12">
+        <div class="card card-custom p-5">
+            <h4 class="fw-bold mb-4" style="color: var(--gold-axcan);">
+                <i class="bi bi-clock-history me-2"></i> Configuración de Horarios Semanales
+            </h4>
+            <p class="text-muted small mb-4">Define las horas de apertura, cierre y los días de descanso de tu negocio.</p>
+            
+            <form asp-action="GuardarHorarios" method="post">
+                <input type="hidden" name="id_empresa" value="@Model.id_empresa" />
+                <div class="table-responsive">
+                    <table class="table table-dark table-borderless align-middle">
+                        <thead>
+                            <tr class="text-muted small border-bottom border-secondary">
+                                <th>Día de la Semana</th>
+                                <th>Hora Apertura</th>
+                                <th>Hora Cierre</th>
+                                <th class="text-center">¿Día de Descanso?</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{ 
+                                string[] dias = { "Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado" }; 
+                                // Intentamos obtener los horarios actuales si existen en el ViewBag
+                                var horariosActuales = ViewBag.Horarios as List<axcan.Models.HorarioNegocio>;
+                            }
+                            @for (int i = 0; i < 7; i++) {
+                                var hAct = horariosActuales?.FirstOrDefault(h => h.dia_semana == i);
+                                <tr>
+                                    <td class="fw-bold text-warning">@dias[i]</td>
+                                    <td>
+                                        <input type="time" name="apertura_@i" class="form-control axcan-input" 
+                                               value="@(hAct != null ? hAct.hora_apertura.ToString(@"hh\:mm") : "09:00")">
+                                    </td>
+                                    <td>
+                                        <input type="time" name="cierre_@i" class="form-control axcan-input" 
+                                               value="@(hAct != null ? hAct.hora_cierre.ToString(@"hh\:mm") : "18:00")">
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="form-check form-switch d-inline-block">
+                                            <input class="form-check-input" type="checkbox" name="descanso_@i" 
+                                                   @(hAct != null && hAct.es_descanso ? "checked" : "")>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="text-end mt-4">
+                    <button type="submit" class="btn btn-gold px-5 py-2 shadow">
+                        <i class="bi bi-save me-2"></i> Actualizar Horario Semanal
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+            <div class="admin-section" id="configuracion">
+                <div class="row">
+                    <div class="col-lg-7">
+                        <div class="card card-custom p-4 mb-4">
+                            <h5 class="fw-bold mb-4" style="color: var(--gold-axcan);"><i class="bi bi-magic"></i> Editor en Tiempo Real</h5>
+                            <form asp-action="EditarNegocio" method="post" enctype="multipart/form-data">
+                                <input type="hidden" asp-for="id_empresa" />
+                                <div class="mb-3">
+                                    <label class="text-muted small fw-bold">Nombre del Negocio</label>
+                                    <input type="text" asp-for="nombre_empresa" id="live-nombre" class="form-control axcan-input">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="text-muted small fw-bold">Color de Marca</label>
+                                    <input type="color" asp-for="color_tema" id="live-color" class="form-control axcan-input" style="height: 50px;">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="text-muted small fw-bold">Descripción</label>
+                                    <textarea asp-for="descripcion" id="live-desc" class="form-control axcan-input" rows="3"></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="text-muted small fw-bold">Banner (Imagen de fondo)</label>
+                                    <input type="file" name="bannerArchivo" class="form-control axcan-input">
+                                </div>
+                                <div class="mb-4">
+                                    <label class="text-muted small fw-bold">Plantilla</label>
+                                    <select asp-for="id_plantilla" id="live-plantilla" class="form-select axcan-input">
+                                        <option value="1">Plantilla 1 (Reserva)</option>
+                                        <option value="2">Plantilla 2 (Informativa)</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-gold w-100 py-3 shadow">GUARDAR CAMBIOS</button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="card card-custom p-4 mt-3">
+    <h6 class="text-warning mb-3">Añadir a la Galería</h6>
+    <form asp-action="SubirFotoGaleria" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="idEmpresa" value="@Model.id_empresa" />
+        <div class="input-group">
+            <input type="file" name="archivoGaleria" class="form-control axcan-input" required>
+            <button class="btn btn-gold" type="submit">Subir</button>
+        </div>
+    </form>
+</div>
+                    <div class="col-lg-5">
+                        <div class="phone-mockup shadow-lg">
+                            <div class="bg-success text-white text-center py-1 small fw-bold">LIVE PREVIEW</div>
+                            <iframe id="iframeDemo" src="/reservar/@Model.nombre_empresa.Replace(" ", "-").ToLower()" style="width:100%; height:100%; border:none; background:#fff;"></iframe>
+                        </div>
+                    </div>
+                </div>
+            </div>
         }
-    </main>
-
-    <div class="modal fade" id="modalAddServicio" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content bg-dark text-white border-warning"><form asp-action="GuardarServicio" method="post"><div class="modal-body"><input type="hidden" name="id_empresa" value="@Model.id_empresa" /><input type="hidden" name="activo" value="true" /><h5 class="text-warning mb-3">Nuevo Servicio</h5><input type="text" name="nombre_servicio" class="form-control axcan-input mb-3" placeholder="Nombre"><input type="number" step="0.01" name="precio" class="form-control axcan-input mb-3" placeholder="Precio $"><input type="number" name="duracion_minutos" class="form-control axcan-input mb-3" placeholder="Minutos"><button class="btn btn-gold w-100">Guardar</button></div></form></div></div></div>
-    
-    <div class="modal fade" id="modalAddEquipo" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content bg-dark text-white border-warning"><form asp-action="AgregarPersonal" method="post"><div class="modal-body"><input type="hidden" name="idEmpresa" value="@Model.id_empresa" /><h5 class="text-warning mb-3">Vincular Staff</h5><input type="text" name="usernameBusqueda" class="form-control axcan-input mb-3" placeholder="Username de Axcan"><select name="subrol" class="form-select axcan-input mb-3"><option value="prestador">Prestador</option><option value="secretario">Secretario</option></select><button class="btn btn-gold w-100">Vincular</button></div></form></div></div></div>
+    </main><div class="modal fade" id="modalAddServicio" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark border-warning">
+            <form asp-action="GuardarServicio" method="post">
+                <div class="modal-body p-4">
+                    <h5 class="text-warning mb-3">Nuevo Servicio</h5>
+                    <input type="hidden" name="id_empresa" value="@Model.id_empresa" />
+                    <input type="text" name="nombre_servicio" class="form-control axcan-input mb-2" placeholder="Nombre del Servicio" required>
+                    <input type="number" step="0.01" name="precio" class="form-control axcan-input mb-2" placeholder="Precio $" required>
+                    <input type="number" name="duracion_minutos" class="form-control axcan-input mb-3" placeholder="Duración (minutos)" required>
+                    <button type="submit" class="btn btn-gold w-100">Guardar Servicio</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+    <div class="modal fade" id="modalAddEquipo" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark border-warning">
+                <form asp-action="AgregarPersonal" method="post">
+                    <div class="modal-body p-4">
+                        <h5 class="text-warning mb-3">Vincular Usuario</h5>
+                        <input type="hidden" name="idEmpresa" value="@Model.id_empresa" />
+                        <label class="small fw-bold">Username de Axcan</label>
+                        <input type="text" name="usernameBusqueda" class="form-control axcan-input mb-3" placeholder="Ej: karla_admin" required>
+                        
+                        <label class="small fw-bold">Asignar Rol</label>
+                        <select name="subrol" class="form-select axcan-input mb-4">
+                            <option value="prestador">Prestador (Especialista)</option>
+                            <option value="secretario">Secretario (Solo Agenda)</option>
+                        </select>
+                        <button class="btn btn-gold w-100">Vincular al Equipo</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
+
     <script>
-        // 1. NAVEGACIÓN SPA (Cambio de Pestañas sin Recargar)
-        document.querySelectorAll('.sidebar .nav-link[href^="#"]').forEach(link => {
+        // SPA NAVEGACIÓN
+        document.querySelectorAll('.nav-link[href^="#"]').forEach(link => {
             link.addEventListener('click', function(e) {
                 e.preventDefault();
-                document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
                 this.classList.add('active');
                 document.querySelectorAll('.admin-section').forEach(sec => sec.classList.remove('active'));
                 document.getElementById(this.getAttribute('href').substring(1)).classList.add('active');
             });
         });
 
-        // 2. MAPA GPS
+        // LÓGICA DE GRÁFICAS
+        let miGrafica;
         document.addEventListener("DOMContentLoaded", function() {
-            var mapContainer = document.getElementById('mapaAdmin');
-            if (mapContainer) {
-                var lat = @Model.ubicacion_lat != 0 ? @Model.ubicacion_lat : 19.4326; 
-                var lng = @Model.ubicacion_lng != 0 ? @Model.ubicacion_lng : -99.1332;
-                var map = L.map('mapaAdmin').setView([lat, lng], 15);
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map); // Mapa modo oscuro
-                var marker = L.marker([lat, lng], { draggable: true }).addTo(map);
-                marker.on('dragend', function (e) {
-                    document.getElementById('lat').value = e.target.getLatLng().lat;
-                    document.getElementById('lng').value = e.target.getLatLng().lng;
-                });
-            }
+            // Cargar datos reales de la base de datos al iniciar
+fetch(`/Home/GetDatosGraficas?idEmpresa=@Model.id_empresa`)
+    .then(r => r.json())
+    .then(data => {
+        miGrafica.data.datasets[0].data = data.citasPorDia;
+        miGrafica.update();
+    });
+            let ctx = document.getElementById('grafica-principal').getContext('2d');
+            miGrafica = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ["Lun", "Mar", "Mie", "Jue", "Vie", "Sab", "Dom"],
+                    datasets: [{
+                        label: 'Citas',
+                        backgroundColor: "#D4AF37",
+                        data: [12, 19, 3, 5, 2, 3, 10]
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            // Conectar botones de filtro
+            document.getElementById('btn-grafica-cancelaciones').onclick = () => {
+                miGrafica.data.datasets[0].data = [1, 0, 2, 0, 1, 3, 1];
+                miGrafica.data.datasets[0].backgroundColor = "#dc3545";
+                miGrafica.data.datasets[0].label = 'Cancelaciones';
+                miGrafica.update();
+            };
+
+            document.getElementById('btn-grafica-citas').onclick = () => {
+                miGrafica.data.datasets[0].data = [12, 19, 3, 5, 2, 3, 10];
+                miGrafica.data.datasets[0].backgroundColor = "#D4AF37";
+                miGrafica.data.datasets[0].label = 'Citas';
+                miGrafica.update();
+            };
+
+            // LIVE PREVIEW LOGIC
+            const iframe = document.getElementById('iframeDemo');
+            document.getElementById('live-nombre').addEventListener('input', (e) => {
+                const h1 = iframe.contentWindow.document.querySelector('h1');
+                if(h1) h1.innerText = e.target.value;
+            });
+
+            document.getElementById('live-color').addEventListener('input', (e) => {
+                const root = iframe.contentWindow.document.documentElement;
+                root.style.setProperty('--brand-color', e.target.value);
+                iframe.contentWindow.document.querySelectorAll('.btn-reserve, .btn-premium').forEach(b => b.style.backgroundColor = e.target.value);
+            });
+
+            document.getElementById('live-desc').addEventListener('input', (e) => {
+                const desc = iframe.contentWindow.document.querySelector('.text-muted');
+                if(desc) desc.innerText = e.target.value;
+            });
+
+            document.getElementById('live-plantilla').addEventListener('change', () => {
+                iframe.src = iframe.src;
+            });
         });
+
+        function actualizarIframe() {
+            document.getElementById('iframeDemo').src = document.getElementById('iframeDemo').src;
+        }
+        // Dentro de tu <script> en Admin.cshtml
+document.addEventListener("DOMContentLoaded", function() {
+    const idEmpresa = "@Model.id_empresa"; // El ID de la empresa del admin
+    
+    fetch(`/Home/GetDatosGraficas?idEmpresa=${idEmpresa}`)
+        .then(response => response.json())
+        .then(data => {
+            // Actualizar gráfica de barras (Citas por día)
+            miGrafica.data.datasets[0].data = data.citasPorDia;
+            miGrafica.update();
+            
+            // Si tienes una gráfica de pastel para la proporción:
+            // miGraficaDona.data.datasets[0].data = data.proporcion;
+        });
+});
     </script>
 
 

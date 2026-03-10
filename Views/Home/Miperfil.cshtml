@@ -1,0 +1,88 @@
+@model axcan.Models.Usuario
+@{
+    var foto = Context.Session.GetString("UsuarioFoto") ?? "/img/default-user.png";
+}
+
+<div class="container mt-5">
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm p-4 text-center rounded-4">
+                <form asp-action="GuardarPerfil" method="post" enctype="multipart/form-data">
+                    <div class="position-relative d-inline-block mb-3">
+                        <img src="@foto" class="rounded-circle border border-4 border-warning shadow" 
+                             style="width: 150px; height: 150px; object-fit: cover;">
+                        <label class="position-absolute bottom-0 end-0 btn btn-dark btn-sm rounded-circle">
+                            <i class="bi bi-camera"></i>
+                            <input type="file" name="fotoPerfil" hidden onchange="this.form.submit()">
+                        </label>
+                    </div>
+                    
+                    <h4 class="fw-bold">@Model.nombre</h4>
+                    <p class="text-muted small">@Model.rol.ToUpper()</p>
+                    
+                    <div class="text-start mt-4">
+                        <label class="small fw-bold text-muted">Nombre Completo</label>
+                        <input type="text" name="nombre" value="@Model.nombre" class="form-control mb-3">
+                        <label class="small fw-bold text-muted">Correo Electrónico</label>
+                        <input type="email" name="correo" value="@Model.correo" class="form-control mb-3">
+                    </div>
+                    <button type="submit" class="btn btn-warning w-100 fw-bold">Guardar Cambios</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm p-4 rounded-4">
+                <h4 class="fw-bold mb-4"><i class="bi bi-calendar3"></i> Mi Agenda y Expedientes</h4>
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Folio</th>
+                                <th>Negocio</th>
+                                <th>Fecha/Hora</th>
+                                <th>Estado</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if(ViewBag.MisCitas != null) {
+                                foreach(var cita in ViewBag.MisCitas) {
+                                    <tr>
+                                        <td><span class="badge bg-dark">@cita.folio</span></td>
+                                        <td><strong>@cita.nombre_empresa</strong></td>
+                                        <td>@cita.fecha.ToShortDateString() <br> <small>@cita.hora</small></td>
+                                        <td>
+                                            <span class="badge @(cita.estatus == "Cancelada" ? "bg-danger" : "bg-warning text-dark")">
+                                                @cita.estatus
+                                            </span>
+                                        </td>
+                                        <td class="text-end">
+                                            @if(cita.estatus == "pendiente") {
+                                                <button onclick="cancelarCita(@cita.id_cita)" class="btn btn-sm btn-outline-danger">
+                                                    Cancelar
+                                                </button>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function cancelarCita(id) {
+    if(confirm("¿Seguro que quieres cancelar esta cita?")) {
+        fetch('/Home/CancelarCitaUsuario?idCita=' + id, { method: 'POST' })
+        .then(r => r.json()).then(data => {
+            if(data.success) location.reload();
+            else alert(data.mensaje);
+        });
+    }
+}
+</script>

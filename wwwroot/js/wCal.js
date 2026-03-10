@@ -335,7 +335,29 @@ serverSelect.addEventListener("change", () => {
         price.textContent = "Precio: $" + precio;
     }
 });
+async function confirmarReserva() {
+    // Jalamos los elementos
+    const inputTel = document.getElementById('telCliente');
+    const inputUser = document.getElementById('idUsuarioLogueado');
+    const inputEmp = document.getElementById('idEmpresaHidden');
+    const selectHora = document.getElementById('hour-select');
 
+    // SI ALGUNO NO EXISTE, EL PROGRAMA SE DETIENE AQUÍ Y TE AVISA
+    if (!inputTel || !inputUser || !inputEmp) {
+        console.error("🚨 Error: Falta un elemento en el HTML. Revisa los IDs.");
+        alert("Falta configurar el campo de teléfono o los datos de sesión.");
+        return;
+    }
+
+    const tel = inputTel.value;
+    
+    if (tel.length !== 10) {
+        alert("Padrino, pon los 10 dígitos del teléfono.");
+        return;
+    }
+    
+    // ... resto de tu fetch ...
+}
 
 
 const prev = document.getElementById("prev_month");
@@ -351,7 +373,42 @@ const close_Modal_Cancel = document.getElementById("cancel");
 close_Modal_Cancel.addEventListener("click", closeModal);
 
 document.addEventListener("load", load());
+// Agrega esto al final de wCal.js
+async function agendarCitaFinal() {
+    const tel = document.getElementById('telCliente').value;
+    const esOtro = document.getElementById('checkAlguienMas').checked;
+    const nombreOtro = document.getElementById('nombreAlguienMas').value;
 
+    // Validación de 10 dígitos (Punto 5 de tu lista)
+    if (tel.length !== 10 || isNaN(tel)) {
+        alert("El teléfono debe ser de 10 dígitos numéricos.");
+        return;
+    }
+
+    const formData = new FormData();
+    // Sacamos los datos de los IDs que ya tienes en wCal.js
+    formData.append("id_usuario_tramito", document.getElementById('UsuarioIdHidden').value);
+    formData.append("id_empresa", document.getElementById('idEmpresaHidden').value);
+    formData.append("fecha", document.getElementById('fecha_seleccionada_oculta').value); 
+    formData.append("hora", document.getElementById('hour-select').value);
+    formData.append("tipo_servicio", document.getElementById('service-select').value);
+    formData.append("quien_atiende", document.getElementById('server-select').value);
+    
+    // Parámetros de validación para el HomeController
+    formData.append("telefonoCliente", tel);
+    formData.append("esParaAlguienMas", esOtro);
+    formData.append("nombreAlguienMas", nombreOtro);
+
+    const resp = await fetch('/Home/AgendarCita', { method: 'POST', body: formData });
+    const res = await resp.json();
+
+    if(res.success) {
+        alert("¡Iguano Exitoso! " + res.mensaje);
+        location.reload();
+    } else {
+        alert("Error: " + res.mensaje);
+    }
+}
 
 
 

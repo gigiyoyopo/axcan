@@ -1,18 +1,15 @@
-// Guarda las calificaciones y comentarios que los clientes le dejan a las barberías/clínicas.
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations; // <--- No olvides este using
 
 namespace axcan.Models
 {
-    [Table("resenas", Schema = "public")]
     public class Resena
     {
-        [Key]
+        [Key] // <--- ESTO MATARÁ EL ERROR ROJO
         public int id_resena { get; set; }
         public int id_empresa { get; set; }
-        public int id_cliente { get; set; } // El usuario que dejó la reseña
-        public int calificacion { get; set; } // Del 1 al 5
-        public string? comentario { get; set; }
-        public DateTime fecha_resena { get; set; } = DateTime.Now;
+        public int id_usuario { get; set; }
+        public string comentario { get; set; } = string.Empty; // El = string.Empty quita el warning CS8618
+        public int calificacion { get; set; }
+        public DateTime fecha { get; set; }
     }
 }
