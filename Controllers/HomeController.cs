@@ -141,7 +141,37 @@ public async Task<IActionResult> Index(string busqueda)
             await _context.SaveChangesAsync();
             return RedirectToAction("Admin");
         }
+[HttpPost]
+public async Task<IActionResult> ProcesarRegistro(Usuario u)
+{
+    try 
+    {
+        // 1. Verificamos si el usuario ya existe
+        var existe = await _context.usuarios.AnyAsync(x => x.username == u.username);
+        if (existe) {
+            ViewBag.Error = "Ese nombre de usuario ya existe. Intenta con otro.";
+            return View("registro");
+        }
 
+        // 2. Valores por defecto
+        u.rol = "usuario"; 
+        u.fecha_registro = DateTime.Now;
+        
+        // 3. Guardamos en la Base de Datos
+        _context.usuarios.Add(u);
+        await _context.SaveChangesAsync();
+        
+        // 4. EL MENSAJE QUE PIDIÓ EL EQUIPO Y REDIRECCIÓN
+        TempData["Mensaje"] = "¡Bienvenido a AXCAN! Ya puedes iniciar sesión.";
+        return RedirectToAction("login");
+    }
+    catch (Exception ex) 
+    {
+        // Si la base de datos explota, te avisará exactamente por qué y no se quedará pasmado
+        ViewBag.Error = "Error interno al registrar: " + ex.InnerException?.Message ?? ex.Message;
+        return View("registro");
+    }
+}
         [HttpPost]
         public async Task<IActionResult> GuardarServicio(Servicio s)
         {
@@ -313,7 +343,7 @@ public async Task<IActionResult> GetHorariosDisponibles(int idEmpresa, DateTime 
             return RedirectToAction("ConfiguracionDeCuenta");
         }
 
-        public IActionResult Logout() {
+       public async Task<IActionResult> Logout() {
             HttpContext.Session.Clear();
             await HttpContext.SignOutAsync("Cookies");
             return RedirectToAction("login");

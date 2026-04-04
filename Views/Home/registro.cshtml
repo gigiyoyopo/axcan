@@ -92,5 +92,24 @@
     
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="~/js/alejandro.js"></script>
+<script>
+        document.getElementById("registerForm").addEventListener("submit", function(event) {
+            var pass = document.getElementById("regPass").value;
+            var confirmPass = document.getElementById("regPassConfirm").value;
+
+            if (pass !== confirmPass) {
+                // Detenemos el envío al servidor
+                event.preventDefault(); 
+                
+                // Le mostramos la alerta al usuario
+                alert("¡Aguas! Las contraseñas no coinciden. Verifícalas antes de continuar.");
+                
+                // Limpiamos el campo de confirmación
+                document.getElementById("regPassConfirm").value = "";
+                document.getElementById("regPassConfirm").focus();
+            }
+        });
+    </script>
 </body>
+
 </html>
