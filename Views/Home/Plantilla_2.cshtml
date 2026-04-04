@@ -70,6 +70,10 @@
         <i class="bi bi-chevron-left"></i> Volver
     </a>
 
+    <a asp-controller="Citas" asp-action="MisCitas" class="btn rounded-pill shadow text-white" style="position: fixed; top: 20px; right: 20px; z-index: 1000; padding: 12px 25px; font-weight: 600; background-color: var(--brand-color);">
+        <i class="bi bi-calendar-check"></i> Mis Citas
+    </a>
+
     <section class="header-gallery">
         <div id="p2Carousel" class="carousel slide carousel-fade h-100" data-bs-ride="carousel">
             <div class="carousel-inner h-100">
@@ -89,7 +93,7 @@
             </div>
         </div>
         <div class="floating-info">
-            <img src="@Model.logotipo_url" width="100" height="100" class="rounded-circle border border-4 border-white mb-4 shadow-lg">
+            <img src="@Model.logotipo_url" width="100" height="100" class="rounded-circle border border-4 border-white mb-4 shadow-lg" style="object-fit: cover;">
             <h1 class="display-2 fw-bold">@Model.nombre_empresa</h1>
             <p class="fs-4 fw-light text-uppercase tracking-widest">@Model.rubro</p>
         </div>
@@ -101,20 +105,33 @@
                 <div class="mb-5">
                     <p class="section-title">Nuestra Esencia</p>
                     <h2 class="fw-bold mb-4">Experiencias diseñadas para ti.</h2>
-                    <p class="text-muted fs-5 lh-lg">@Model.descripcion</p>
+                    <p class="text-muted fs-5 lh-lg" style="white-space: pre-line;">@Model.descripcion</p>
+                    
+                    <div class="d-flex gap-4 mt-4">
+                        @if (!string.IsNullOrEmpty(Model.url_facebook)) {
+                            <a href="@Model.url_facebook" target="_blank" class="fs-2 transition" style="color: var(--brand-color);"><i class="bi bi-facebook"></i></a>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.url_instagram)) {
+                            <a href="@Model.url_instagram" target="_blank" class="fs-2 transition" style="color: var(--brand-color);"><i class="bi bi-instagram"></i></a>
+                        }
+                    </div>
                 </div>
 
                 <div class="mb-5">
                     <p class="section-title">Elige un Servicio</p>
                     <div class="row g-3">
-                        @foreach(var s in ViewBag.Servicios) {
-                            <div class="col-md-6">
-                                <div class="service-card" onclick="selectService(this, '@s.nombre_servicio', '@s.precio')">
-                                    <i class="bi bi-star"></i>
-                                    <h5 class="fw-bold mt-3 mb-1">@s.nombre_servicio</h5>
-                                    <p class="text-muted small mb-0">$@s.precio MXN</p>
+                        @if(ViewBag.Servicios != null) {
+                            foreach(var s in ViewBag.Servicios) {
+                                <div class="col-md-6">
+                                    <div class="service-card" onclick="selectService(this, '@s.nombre_servicio', '@s.precio')">
+                                        <i class="bi bi-star"></i>
+                                        <h5 class="fw-bold mt-3 mb-1">@s.nombre_servicio</h5>
+                                        <p class="text-muted small mb-0">$@s.precio MXN</p>
+                                    </div>
                                 </div>
-                            </div>
+                            }
+                        } else {
+                            <p class="text-muted">No hay servicios disponibles.</p>
                         }
                     </div>
                     <input type="hidden" id="p2-servicio-val">
@@ -139,7 +156,7 @@
                                         @for(int i=0; i<r.calificacion; i++){ <i class="bi bi-star-fill"></i> }
                                     </span>
                                 </div>
-                                <p class="text-muted mb-0 italic">"@r.comentario"</p>
+                                <p class="text-muted mb-0" style="font-style: italic;">"@r.comentario"</p>
                             </div>
                         }
                     }
@@ -153,8 +170,10 @@
                     <div class="mb-4">
                         <label class="small fw-bold mb-2">Especialista</label>
                         <select id="p2-staff" class="form-select border-0 bg-light p-3 rounded-4">
-                            @foreach(var p in ViewBag.Personal) {
-                                <option value="@p.nombre">@p.nombre</option>
+                            @if(ViewBag.Personal != null) {
+                                foreach(var p in ViewBag.Personal) {
+                                    <option value="@p.nombre">@p.nombre</option>
+                                }
                             }
                         </select>
                     </div>
@@ -172,7 +191,7 @@
                     <div class="bg-light p-4 rounded-4 mb-4">
                         <label class="small fw-bold mb-2 text-dark">Tus Datos</label>
                         <input type="text" id="p2-nombre-cliente" class="form-control border-0 mb-2 p-2" placeholder="Tu Nombre" value="@Context.Session.GetString("UsuarioNombre")">
-                        <input type="tel" id="p2-tel" class="form-control border-0 p-2" placeholder="Tu Teléfono">
+                        <input type="tel" id="p2-tel" class="form-control border-0 p-2" placeholder="Tu Teléfono (10 dígitos)">
                     </div>
 
                     <button onclick="agendarP2()" class="btn-reserve-final shadow-lg">CONFIRMAR CITA</button>
@@ -182,110 +201,103 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-    // 1. MAPA DINÁMICO
-    var lat = @(Model.ubicacion_lat != 0 ? Model.ubicacion_lat : 19.4326);
-    var lng = @(Model.ubicacion_lng != 0 ? Model.ubicacion_lng : -99.1332);
-    var map = L.map('mapaP2').setView([lat, lng], 16);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-    L.marker([lat, lng]).addTo(map).bindPopup("<b>@Model.nombre_empresa</b>").openPopup();
+    <script>
+        // 1. MAPA DINÁMICO
+        var lat = @(Model.ubicacion_lat != 0 ? Model.ubicacion_lat : 19.4326);
+        var lng = @(Model.ubicacion_lng != 0 ? Model.ubicacion_lng : -99.1332);
+        var map = L.map('mapaP2').setView([lat, lng], 16);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        L.marker([lat, lng]).addTo(map).bindPopup("<b>@Model.nombre_empresa</b>").openPopup();
 
-    // 2. SELECCIÓN DE SERVICIO (REPARADO)
-    let servicioSeleccionado = "";
-    function selectService(el, name, price) {
-        // Quitar clase activa de todas las tarjetas
-        document.querySelectorAll('.service-card').forEach(c => c.classList.remove('active'));
-        // Poner clase activa a la que clickeaste
-        el.classList.add('active');
-        // Guardar el nombre del servicio
-        servicioSeleccionado = name;
-        // Opcional: mostrar alerta visual de selección
-        console.log("Servicio elegido: " + name);
-    }
+        // 2. SELECCIÓN DE SERVICIO
+        let servicioSeleccionado = "";
+        function selectService(el, name, price) {
+            document.querySelectorAll('.service-card').forEach(c => c.classList.remove('active'));
+            el.classList.add('active');
+            servicioSeleccionado = name;
+        }
 
-    // 3. LÓGICA DE HORARIOS (REPARADO)
-    let selHora = "";
-    document.getElementById('p2-fecha').addEventListener('change', function() {
-        const fechaVal = this.value;
-        const idEmp = '@Model.id_empresa';
-        
-        if(!fechaVal) return;
-
-        fetch(`/Home/GetHorariosDisponibles?idEmpresa=${idEmp}&fecha=${fechaVal}`)
-        .then(r => {
-            if (!r.ok) throw new Error("Error en servidor");
-            return r.json();
-        })
-        .then(data => {
-            let div = document.getElementById('p2-horas-cont');
-            div.innerHTML = ''; // Limpiar mensaje anterior
+        // 3. LÓGICA DE HORARIOS
+        let selHora = "";
+        document.getElementById('p2-fecha').addEventListener('change', function() {
+            const fechaVal = this.value;
+            const idEmp = '@Model.id_empresa';
             
-            if(data.disponibles && data.disponibles.length > 0) {
-                data.disponibles.forEach(h => {
-                    let btn = document.createElement('div');
-                    btn.className = 'chip-hora';
-                    btn.innerText = h;
-                    btn.onclick = function() {
-                        document.querySelectorAll('.chip-hora').forEach(c => c.classList.remove('active'));
-                        this.classList.add('active');
-                        selHora = h;
-                    };
-                    div.appendChild(btn);
-                });
-            } else {
-                div.innerHTML = '<p class="text-danger small fw-bold">Sin citas disponibles para esta fecha.</p>';
-            }
-        })
-        .catch(err => {
-            console.error(err);
-            alert("No se pudieron cargar los horarios.");
+            if(!fechaVal) return;
+
+            fetch(`/Home/GetHorariosDisponibles?idEmpresa=${idEmp}&fecha=${fechaVal}`)
+            .then(r => {
+                if (!r.ok) throw new Error("Error en servidor");
+                return r.json();
+            })
+            .then(data => {
+                let div = document.getElementById('p2-horas-cont');
+                div.innerHTML = ''; 
+                
+                if(data.disponibles && data.disponibles.length > 0) {
+                    data.disponibles.forEach(h => {
+                        let btn = document.createElement('div');
+                        btn.className = 'chip-hora';
+                        btn.innerText = h;
+                        btn.onclick = function() {
+                            document.querySelectorAll('.chip-hora').forEach(c => c.classList.remove('active'));
+                            this.classList.add('active');
+                            selHora = h;
+                        };
+                        div.appendChild(btn);
+                    });
+                } else {
+                    div.innerHTML = '<p class="text-danger small fw-bold">Sin citas disponibles para esta fecha.</p>';
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById('p2-horas-cont').innerHTML = '<p class="text-danger small fw-bold">Error al cargar horarios.</p>';
+            });
         });
-    });
 
-    // 4. FUNCIÓN AGENDAR (REPARADO)
-    function agendarP2() {
-        let tel = document.getElementById('p2-tel').value;
-        let staff = document.getElementById('p2-staff').value;
-        let fecha = document.getElementById('p2-fecha').value;
+        // 4. FUNCIÓN AGENDAR CORREGIDA
+        function agendarP2() {
+            let tel = document.getElementById('p2-tel').value;
+            let staff = document.getElementById('p2-staff').value;
+            let fecha = document.getElementById('p2-fecha').value;
 
-        // Validaciones críticas
-        if(!servicioSeleccionado) return alert("¡Padrino, selecciona un servicio primero!");
-        if(!fecha) return alert("Falta la fecha.");
-        if(!selHora) return alert("Elige un horario.");
-        if(tel.length < 10) return alert("Escribe un teléfono válido (10 dígitos).");
+            if(!servicioSeleccionado) return alert("Por favor, selecciona un servicio dando clic en una tarjeta.");
+            if(!fecha) return alert("Falta seleccionar la fecha.");
+            if(!selHora) return alert("Elige un horario disponible.");
+            if(tel.length < 10) return alert("Escribe un teléfono válido (10 dígitos).");
 
-        let fd = new FormData();
-        fd.append('id_empresa', '@Model.id_empresa');
-        fd.append('fecha', fecha);
-        fd.append('hora', selHora);
-        fd.append('tipo_servicio', servicioSeleccionado);
-        fd.append('quien_atiende', staff);
-        
-        // Bloquear botón para evitar doble registro (como pidió Karla)
-        const btn = event.target;
-        btn.disabled = true;
-        btn.innerText = "Procesando...";
+            let fd = new FormData();
+            fd.append('id_empresa', '@Model.id_empresa');
+            fd.append('fecha', fecha);
+            fd.append('hora', selHora);
+            fd.append('tipo_servicio', servicioSeleccionado);
+            fd.append('quien_atiende', staff);
+            
+            const btn = event.target;
+            btn.disabled = true;
+            btn.innerText = "Procesando...";
 
-        fetch('/Home/AgendarCita', { method: 'POST', body: fd })
-        .then(r => r.json())
-        .then(d => {
-            if(d.success) {
-                alert("¡Cita agendada con éxito!");
-                window.location.href = '/mi-perfil';
-            } else {
-                alert("Error: " + (d.mensaje || "No se pudo agendar."));
+            fetch('/Home/AgendarCita', { method: 'POST', body: fd })
+            .then(r => r.json())
+            .then(d => {
+                if(d.success) {
+                    alert("¡Cita agendada con éxito!");
+                    // Redirección corregida hacia "Mis Citas"
+                    window.location.href = '/Citas/MisCitas';
+                } else {
+                    alert("Error: " + (d.mensaje || "No se pudo agendar."));
+                    btn.disabled = false;
+                    btn.innerText = "CONFIRMAR CITA";
+                }
+            })
+            .catch(e => {
+                alert("Error de conexión con el servidor.");
                 btn.disabled = false;
                 btn.innerText = "CONFIRMAR CITA";
-            }
-        })
-        .catch(e => {
-            alert("Error de conexión con el servidor.");
-            btn.disabled = false;
-            btn.innerText = "CONFIRMAR CITA";
-        });
-    }
-</script>
+            });
+        }
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

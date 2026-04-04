@@ -31,7 +31,7 @@
             margin-bottom: -50px;
         }
 
-        .review-card { background: #fff; border-radius: 15px; border-left: 5px solid var(--main-gold); shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .review-card { background: #fff; border-radius: 15px; border-left: 5px solid var(--main-gold); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .chip-hora { border: 1px solid #ddd; padding: 8px 15px; border-radius: 12px; cursor: pointer; transition: 0.2s; background: white; }
         .chip-hora.active { background: var(--main-gold); color: white; border-color: var(--main-gold); }
     </style>
@@ -46,7 +46,12 @@
                 <img src="@Model.logotipo_url" width="40" height="40" class="rounded-circle me-2 border border-white"> 
                 <span class="fw-bold">@Model.nombre_empresa</span>
             </a>
-            <a href="/" class="btn btn-outline-light rounded-pill btn-sm"><i class="bi bi-arrow-left"></i> Volver</a>
+            <div>
+                <a asp-controller="Citas" asp-action="MisCitas" class="btn btn-outline-warning rounded-pill btn-sm me-2" style="border-color: var(--main-gold); color: var(--main-gold);">
+                    <i class="bi bi-calendar-check"></i> Mis Citas
+                </a>
+                <a href="/" class="btn btn-outline-light rounded-pill btn-sm"><i class="bi bi-arrow-left"></i> Volver</a>
+            </div>
         </div>
     </nav>
 
@@ -76,6 +81,36 @@
                 <div class="card border-0 shadow-sm p-4 mb-4 rounded-4">
                     <h3 class="fw-bold" style="color: var(--main-gold)">Nuestra Historia</h3>
                     <p class="text-muted" style="white-space: pre-line;">@Model.descripcion</p>
+                    
+                    <div class="d-flex gap-3 mt-3">
+                        @if (!string.IsNullOrEmpty(Model.url_facebook)) {
+                            <a href="@Model.url_facebook" target="_blank" class="fs-4 transition" style="color: var(--main-gold);"><i class="bi bi-facebook"></i></a>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.url_instagram)) {
+                            <a href="@Model.url_instagram" target="_blank" class="fs-4 transition" style="color: var(--main-gold);"><i class="bi bi-instagram"></i></a>
+                        }
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm p-4 mb-4 rounded-4">
+                    <h4 class="fw-bold mb-3" style="color: var(--main-gold)"><i class="bi bi-stars"></i> Nuestros Servicios</h4>
+                    <div class="row g-3">
+                        @if(ViewBag.Servicios != null) {
+                            foreach(var s in ViewBag.Servicios) {
+                                <div class="col-md-6">
+                                    <div class="p-3 border rounded-3 bg-light shadow-sm h-100">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <strong class="text-dark">@s.nombre_servicio</strong>
+                                            <span class="badge" style="background-color: var(--main-gold)">$@s.precio</span>
+                                        </div>
+                                        <small class="text-muted"><i class="bi bi-clock"></i> @s.duracion_minutos min</small>
+                                    </div>
+                                </div>
+                            }
+                        } else {
+                            <p class="text-muted small">No hay servicios registrados por el momento.</p>
+                        }
+                    </div>
                 </div>
 
                 <div class="card border-0 shadow-sm p-4 mb-4 rounded-4">
@@ -87,7 +122,7 @@
                     <h4 class="fw-bold mb-4">Opiniones de la Comunidad</h4>
                     @if(ViewBag.Resenas != null) {
                         foreach(var r in ViewBag.Resenas) {
-                            <div class="review-card p-3 mb-3 shadow-sm">
+                            <div class="review-card p-3 mb-3">
                                 <div class="d-flex align-items-center mb-2">
                                     <img src="@(string.IsNullOrEmpty(r.foto_url) ? "https://ui-avatars.com/api/?name="+r.nombre : r.foto_url)" class="rounded-circle me-2" width="35">
                                     <strong class="me-2 small">@r.nombre</strong>
@@ -107,29 +142,33 @@
                     <h4 class="fw-bold text-center mb-4">Reserva tu Cita</h4>
                     
                     <label class="small fw-bold text-muted mb-1">Servicio</label>
-                    <select id="sel-serv" class="form-select mb-3 border-0 bg-light">
-                        @foreach(var s in ViewBag.Servicios) { 
-                            <option value="@s.nombre_servicio">@s.nombre_servicio ($@s.precio)</option> 
+                    <select id="sel-serv" class="form-select mb-3 border-0 bg-light shadow-sm">
+                        @if(ViewBag.Servicios != null) {
+                            foreach(var s in ViewBag.Servicios) { 
+                                <option value="@s.nombre_servicio">@s.nombre_servicio ($@s.precio)</option> 
+                            }
                         }
                     </select>
 
                     <label class="small fw-bold text-muted mb-1">Atendido por</label>
-                    <select id="sel-staff" class="form-select mb-3 border-0 bg-light">
-                        @foreach(var p in ViewBag.Personal) { 
-                            <option value="@p.nombre">@p.nombre</option> 
+                    <select id="sel-staff" class="form-select mb-3 border-0 bg-light shadow-sm">
+                        @if(ViewBag.Personal != null) {
+                            foreach(var p in ViewBag.Personal) { 
+                                <option value="@p.nombre">@p.nombre</option> 
+                            }
                         }
                     </select>
 
                     <label class="small fw-bold text-muted mb-1">Fecha</label>
-                    <input type="date" id="sel-fecha" class="form-control mb-3 border-0 bg-light" min="@DateTime.Now.ToString("yyyy-MM-dd")">
+                    <input type="date" id="sel-fecha" class="form-control mb-3 border-0 bg-light shadow-sm" min="@DateTime.Now.ToString("yyyy-MM-dd")">
 
                     <label class="small fw-bold text-muted mb-1">Horario disponible</label>
-                    <div id="horarios-cont" class="d-flex flex-wrap gap-2 mb-4 justify-content-center">
-                        <p class="text-muted small italic">Selecciona una fecha primero</p>
+                    <div id="horarios-cont" class="d-flex flex-wrap gap-2 mb-4 justify-content-center p-2 bg-light rounded-3 shadow-sm" style="min-height: 50px;">
+                        <p class="text-muted small mb-0 mt-1" style="font-style: italic;">Selecciona una fecha primero</p>
                     </div>
 
-                    <div class="bg-light p-3 rounded-3 mb-3">
-                        <input type="tel" id="cli-tel" class="form-control border-0 mb-0" placeholder="WhatsApp (10 dígitos)">
+                    <div class="bg-light p-3 rounded-3 mb-3 shadow-sm">
+                        <input type="tel" id="cli-tel" class="form-control border-0 mb-0 bg-transparent" placeholder="Teléfono / WhatsApp (10 dígitos)">
                     </div>
 
                     <button class="btn btn-reserve w-100 py-3 shadow" id="btn-agendar" onclick="agendarCita()">CONFIRMAR CITA</button>
@@ -166,8 +205,10 @@
                         div.appendChild(btn);
                     });
                 } else {
-                    div.innerHTML = '<p class="text-danger small fw-bold">Sin disponibilidad para hoy</p>';
+                    div.innerHTML = '<p class="text-danger small fw-bold mb-0 mt-1">Sin disponibilidad para hoy</p>';
                 }
+            }).catch(e => {
+                document.getElementById('horarios-cont').innerHTML = '<p class="text-danger small fw-bold mb-0 mt-1">Error al cargar horarios</p>';
             });
         });
 
@@ -177,7 +218,7 @@
             const fecha = document.getElementById('sel-fecha').value;
             
             if(!selHora || tel.length < 10 || !fecha) {
-                return alert("Completa fecha, horario y un teléfono válido.");
+                return alert("Por favor, completa la fecha, selecciona un horario y escribe un teléfono válido de 10 dígitos.");
             }
 
             const btn = document.getElementById('btn-agendar');
@@ -194,13 +235,17 @@
             fetch('/Home/AgendarCita', { method: 'POST', body: fd })
             .then(r => r.json()).then(d => {
                 if(d.success) {
-                    alert("¡Cita agendada!");
-                    window.location.href = '/mi-perfil';
+                    alert("¡Cita agendada con éxito!");
+                    window.location.href = '/Citas/MisCitas'; // Redirige a Mis Citas en lugar de perfil
                 } else {
-                    alert("Error al agendar");
+                    alert("Error al agendar la cita. Por favor intenta de nuevo.");
                     btn.disabled = false;
                     btn.innerText = "CONFIRMAR CITA";
                 }
+            }).catch(e => {
+                alert("Error de conexión al agendar.");
+                btn.disabled = false;
+                btn.innerText = "CONFIRMAR CITA";
             });
         }
     </script>

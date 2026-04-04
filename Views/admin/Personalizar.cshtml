@@ -1,0 +1,116 @@
+@model axcan.Models.Empresa
+
+@{
+    ViewData["Title"] = "Personalizar Agenda";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<style>
+    /* Estructura principal del WYSIWYG */
+    .wysiwyg-container {
+        display: flex;
+        gap: 20px;
+        height: calc(100vh - 120px);
+        margin-top: 10px;
+    }
+
+    /* Panel izquierdo (30%) - Controles */
+    .editor-panel {
+        width: 30%;
+        background-color: #f8f9fa;
+        padding: 25px;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        overflow-y: auto;
+    }
+
+    /* Panel derecho (70%) - Muestra en vivo */
+    .preview-panel {
+        width: 70%;
+        border: 2px dashed #ced4da;
+        border-radius: 10px;
+        background-color: #ffffff;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .preview-frame {
+        width: 100%;
+        height: 100%;
+        border: none;
+    }
+</style>
+
+<div class="wysiwyg-container">
+    
+    <div class="editor-panel">
+        <h3 class="mb-4"><i class="bi bi-palette"></i> Personalizador</h3>
+        
+        <form asp-action="GuardarPersonalizacion" method="post">
+            <input type="hidden" asp-for="id_empresa" />
+
+            <h5 class="text-muted">Apariencia</h5>
+            <div class="form-group mb-3">
+                <label class="form-label text-dark fw-bold">Color Principal (Tema)</label>
+                <input type="color" class="form-control form-control-color w-100" asp-for="color_tema" id="colorTemaInput" title="Elige tu color" />
+            </div>
+
+            <div class="form-group mb-3">
+                <label class="form-label text-dark fw-bold">URL del Logotipo</label>
+                <input type="url" class="form-control" asp-for="logotipo_url" placeholder="https://tusitio.com/logo.png" />
+            </div>
+
+            <div class="form-group mb-4">
+                <label class="form-label text-dark fw-bold">URL del Banner Superior</label>
+                <input type="url" class="form-control" asp-for="banner_url" placeholder="https://tusitio.com/banner.jpg" />
+            </div>
+
+            <hr />
+
+            <h5 class="text-muted">Redes Sociales</h5>
+            <div class="form-group mb-3">
+                <label class="form-label text-dark fw-bold"><i class="bi bi-facebook text-primary"></i> Link de Facebook</label>
+                <input type="url" class="form-control" asp-for="url_facebook" placeholder="https://facebook.com/tu-negocio" />
+            </div>
+
+            <div class="form-group mb-4">
+                <label class="form-label text-dark fw-bold"><i class="bi bi-instagram text-danger"></i> Link de Instagram</label>
+                <input type="url" class="form-control" asp-for="url_instagram" placeholder="https://instagram.com/tu_negocio" />
+            </div>
+
+            <hr />
+
+            <h5 class="text-muted">Estructura</h5>
+            <div class="form-group mb-4">
+                <label class="form-label text-dark fw-bold">Seleccionar Plantilla</label>
+                <select class="form-select" asp-for="id_plantilla">
+                    <option value="1">Plantilla 1 (Estilo Clásico - Lista)</option>
+                    <option value="2">Plantilla 2 (Estilo Moderno - Tarjetas)</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 fw-bold py-2 shadow-sm">
+                <i class="bi bi-save"></i> Guardar Diseño
+            </button>
+        </form>
+    </div>
+
+    <div class="preview-panel">
+        <iframe src="/Agenda/Empresa/@Model.id_empresa" id="iframePreview" class="preview-frame" title="Vista Previa de la Agenda"></iframe>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Este script detecta cuando el admin cambia el color y lo inyecta al iframe al instante
+        document.getElementById('colorTemaInput').addEventListener('input', function (e) {
+            const nuevoColor = e.target.value;
+            const iframe = document.getElementById('iframePreview').contentWindow;
+            
+            if(iframe && iframe.document) {
+                // Modifica la variable CSS del Root de la plantilla
+                iframe.document.documentElement.style.setProperty('--color-primario', nuevoColor);
+            }
+        });
+    </script>
+}

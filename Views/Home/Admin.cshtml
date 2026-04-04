@@ -13,7 +13,6 @@
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
     <style>
         :root { 
@@ -24,7 +23,7 @@
         }
         body { background-color: #0f0f0f; color: #fff; transition: all 0.3s ease; font-family: 'Segoe UI', sans-serif; }
         
-        .sidebar { width: var(--sidebar-width); height: 100vh; position: fixed; top: 0; left: 0; z-index: 1000; background: var(--dark-axcan); border-right: 1px solid #333; }
+        .sidebar { width: var(--sidebar-width); height: 100vh; position: fixed; top: 0; left: 0; z-index: 1000; background: var(--dark-axcan); border-right: 1px solid #333; overflow-y: auto;}
         .main-content { margin-left: var(--sidebar-width); padding: 30px; }
         .nav-link { color: #888; margin: 8px 15px; border-radius: 8px; padding: 12px; transition: 0.2s; }
         .nav-link:hover, .nav-link.active { background: rgba(212, 175, 55, 0.1); color: var(--gold-axcan) !important; font-weight: bold; border-left: 3px solid var(--gold-axcan); }
@@ -39,12 +38,17 @@
         @@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         .phone-mockup { border: 10px solid #333; border-radius: 40px; height: 780px; position: sticky; top: 20px; background: #000; overflow: hidden; }
+        
+        .logo-sidebar { width: 80px; height: 80px; object-fit: cover; border: 2px solid var(--gold-axcan); border-radius: 50%; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
     <nav class="sidebar shadow">
         <div class="p-4 text-center border-bottom border-secondary">
+            @if(!string.IsNullOrEmpty(Model.logotipo_url)) {
+                <img src="@Model.logotipo_url" alt="Logo" class="logo-sidebar shadow" />
+            }
             <h3 class="fw-bold mb-1" style="color: var(--gold-axcan); letter-spacing: 2px;">AXCAN</h3>
             <span class="badge bg-dark border border-warning text-warning rounded-pill">@rolActual.ToUpper()</span>
         </div>
@@ -60,8 +64,8 @@
                 <a href="#calendario-secretario" class="nav-link active"><i class="bi bi-calendar-month me-2"></i> Gestión de Citas</a>
             }
             <hr class="text-secondary mx-3 my-4">
-            <a asp-action="Index" class="nav-link text-info"><i class="bi bi-house me-2"></i> Ir al Buscador</a>
-            <a asp-action="Logout" class="nav-link text-danger"><i class="bi bi-box-arrow-left me-2"></i> Cerrar Sesión</a>
+            <a asp-action="Index" asp-controller="Home" class="nav-link text-info"><i class="bi bi-house me-2"></i> Ir al Buscador</a>
+            <a asp-action="Logout" asp-controller="Home" class="nav-link text-danger"><i class="bi bi-box-arrow-left me-2"></i> Cerrar Sesión</a>
         </div>
     </nav>
 
@@ -74,13 +78,13 @@
             <div class="admin-section active" id="stats">
                 <div class="row g-4 mb-4">
                     <div class="col-md-4">
-                        <div class="card card-custom p-4 text-center">
+                        <div class="card card-custom p-4 text-center mb-3">
                             <h6 class="text-muted fw-bold small">CITAS TOTALES</h6>
                             <h1 class="fw-bold" style="color: var(--gold-axcan);">@(listaCitas?.Count ?? 0)</h1>
                         </div>
-                        <div class="card card-custom p-4 mt-3">
-                            <h5 class="fw-bold small mb-3">Filtros</h5>
-                            <button class="btn btn-primary btn-sm w-100 mb-2" id="btn-grafica-citas">Ver Citas</button>
+                        <div class="card card-custom p-4 text-center">
+                            <h5 class="fw-bold small mb-3">Filtros Rápidos</h5>
+                            <button class="btn btn-primary btn-sm w-100 mb-2" id="btn-grafica-citas">Ver Citas Totales</button>
                             <button class="btn btn-outline-danger btn-sm w-100 mb-2" id="btn-grafica-cancelaciones">Ver Cancelaciones</button>
                         </div>
                     </div>
@@ -123,80 +127,95 @@
                     <div class="list-group">
                         @if(ViewBag.Servicios != null) {
                             foreach(var s in ViewBag.Servicios) {
-                                <div class="list-group-item bg-transparent text-white border-secondary d-flex justify-content-between align-items-center">
-                                    <div><strong>@s.nombre_servicio</strong> <br><small class="text-muted">@s.duracion_minutos min</small></div>
-                                    <span class="fw-bold text-warning fs-5">$@s.precio</span>
+                                <div class="list-group-item bg-transparent text-white border-secondary d-flex justify-content-between align-items-center mb-2 rounded">
+                                    <div>
+                                        <strong>@s.nombre_servicio</strong> <br>
+                                        <small class="text-muted"><i class="bi bi-clock"></i> @s.duracion_minutos min</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="fw-bold text-warning fs-5 d-block">$@s.precio</span>
+                                        <button class="btn btn-sm btn-outline-info mt-1" data-bs-toggle="modal" data-bs-target="#modalEditServicio_@s.id_servicio">
+                                            <i class="bi bi-pencil"></i> Editar
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="modal fade" id="modalEditServicio_@s.id_servicio" tabindex="-1">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content bg-dark border-info">
+                                            <form asp-controller="Admin" asp-action="EditarServicio" method="post">
+                                                <div class="modal-body p-4">
+                                                    <h5 class="text-info mb-3">Editar Servicio</h5>
+                                                    <input type="hidden" name="id_servicio" value="@s.id_servicio" />
+                                                    <input type="hidden" name="id_empresa" value="@Model.id_empresa" />
+                                                    
+                                                    <label class="small text-muted">Nombre del Servicio</label>
+                                                    <input type="text" name="nombre_servicio" class="form-control axcan-input mb-2" value="@s.nombre_servicio" required>
+                                                    
+                                                    <label class="small text-muted">Precio</label>
+                                                    <input type="number" step="0.01" name="precio" class="form-control axcan-input mb-2" value="@s.precio" required>
+                                                    
+                                                    <label class="small text-muted">Duración (minutos)</label>
+                                                    <input type="number" name="duracion_minutos" class="form-control axcan-input mb-3" value="@s.duracion_minutos" required>
+                                                    
+                                                    <button type="submit" class="btn btn-info w-100 fw-bold">Actualizar Cambios</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
                                 </div>
                             }
                         }
                     </div>
                 </div>
             </div>
-<div class="row g-4 admin-section" id="horarios">
-    <div class="col-12">
-        <div class="card card-custom p-5">
-            <h4 class="fw-bold mb-4" style="color: var(--gold-axcan);">
-                <i class="bi bi-clock-history me-2"></i> Configuración de Horarios Semanales
-            </h4>
-            <p class="text-muted small mb-4">Define las horas de apertura, cierre y los días de descanso de tu negocio.</p>
-            
-            <form asp-action="GuardarHorarios" method="post">
-                <input type="hidden" name="id_empresa" value="@Model.id_empresa" />
-                <div class="table-responsive">
-                    <table class="table table-dark table-borderless align-middle">
-                        <thead>
-                            <tr class="text-muted small border-bottom border-secondary">
-                                <th>Día de la Semana</th>
-                                <th>Hora Apertura</th>
-                                <th>Hora Cierre</th>
-                                <th class="text-center">¿Día de Descanso?</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @{ 
-                                string[] dias = { "Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado" }; 
-                                // Intentamos obtener los horarios actuales si existen en el ViewBag
-                                var horariosActuales = ViewBag.Horarios as List<axcan.Models.HorarioNegocio>;
-                            }
-                            @for (int i = 0; i < 7; i++) {
-                                var hAct = horariosActuales?.FirstOrDefault(h => h.dia_semana == i);
-                                <tr>
-                                    <td class="fw-bold text-warning">@dias[i]</td>
-                                    <td>
-                                        <input type="time" name="apertura_@i" class="form-control axcan-input" 
-                                               value="@(hAct != null ? hAct.hora_apertura.ToString(@"hh\:mm") : "09:00")">
-                                    </td>
-                                    <td>
-                                        <input type="time" name="cierre_@i" class="form-control axcan-input" 
-                                               value="@(hAct != null ? hAct.hora_cierre.ToString(@"hh\:mm") : "18:00")">
-                                    </td>
-                                    <td class="text-center">
-                                        <div class="form-check form-switch d-inline-block">
-                                            <input class="form-check-input" type="checkbox" name="descanso_@i" 
-                                                   @(hAct != null && hAct.es_descanso ? "checked" : "")>
-                                        </div>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
+
+            <div class="admin-section" id="horarios">
+                <div class="card card-custom p-5">
+                    <h4 class="fw-bold mb-4" style="color: var(--gold-axcan);"><i class="bi bi-clock-history me-2"></i> Configuración de Horarios</h4>
+                    <p class="text-muted small mb-4">Define las horas de apertura, cierre y los días de descanso.</p>
+                    <form asp-controller="Home" asp-action="GuardarHorarios" method="post">
+                        <input type="hidden" name="id_empresa" value="@Model.id_empresa" />
+                        <div class="table-responsive">
+                            <table class="table table-dark table-borderless align-middle">
+                                <thead>
+                                    <tr class="text-muted small border-bottom border-secondary">
+                                        <th>Día</th>
+                                        <th>Apertura</th>
+                                        <th>Cierre</th>
+                                        <th class="text-center">Descanso</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @{ 
+                                        string[] dias = { "Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado" }; 
+                                        var horariosActuales = ViewBag.Horarios as List<axcan.Models.HorarioNegocio>;
+                                    }
+                                    @for (int i = 0; i < 7; i++) {
+                                        var hAct = horariosActuales?.FirstOrDefault(h => h.dia_semana == i);
+                                        <tr>
+                                            <td class="fw-bold text-warning">@dias[i]</td>
+                                            <td><input type="time" name="apertura_@i" class="form-control axcan-input" value="@(hAct != null ? hAct.hora_apertura.ToString(@"hh\:mm") : "09:00")"></td>
+                                            <td><input type="time" name="cierre_@i" class="form-control axcan-input" value="@(hAct != null ? hAct.hora_cierre.ToString(@"hh\:mm") : "18:00")"></td>
+                                            <td class="text-center"><input class="form-check-input" type="checkbox" name="descanso_@i" @(hAct != null && hAct.es_descanso ? "checked" : "")></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="text-end mt-4"><button type="submit" class="btn btn-gold px-5 py-2 shadow"><i class="bi bi-save me-2"></i> Guardar</button></div>
+                    </form>
                 </div>
-                <div class="text-end mt-4">
-                    <button type="submit" class="btn btn-gold px-5 py-2 shadow">
-                        <i class="bi bi-save me-2"></i> Actualizar Horario Semanal
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+            </div>
+
             <div class="admin-section" id="configuracion">
                 <div class="row">
-                    <div class="col-lg-7">
-                        <div class="card card-custom p-4 mb-4">
+                    <div class="col-lg-7 mb-4">
+                        <div class="card card-custom p-4">
                             <h5 class="fw-bold mb-4" style="color: var(--gold-axcan);"><i class="bi bi-magic"></i> Editor en Tiempo Real</h5>
-                            <form asp-action="EditarNegocio" method="post" enctype="multipart/form-data">
+                            <form asp-controller="Home" asp-action="EditarNegocio" method="post" enctype="multipart/form-data">
                                 <input type="hidden" asp-for="id_empresa" />
+                                
                                 <div class="mb-3">
                                     <label class="text-muted small fw-bold">Nombre del Negocio</label>
                                     <input type="text" asp-for="nombre_empresa" id="live-nombre" class="form-control axcan-input">
@@ -213,27 +232,31 @@
                                     <label class="text-muted small fw-bold">Banner (Imagen de fondo)</label>
                                     <input type="file" name="bannerArchivo" class="form-control axcan-input">
                                 </div>
-                                <div class="mb-4">
-                                    <label class="text-muted small fw-bold">Plantilla</label>
+                                
+                                <hr class="border-secondary my-4">
+                                <h6 class="text-warning mb-3"><i class="bi bi-share"></i> Redes Sociales</h6>
+                                
+                                <div class="mb-3">
+                                    <label class="text-muted small fw-bold"><i class="bi bi-facebook text-primary"></i> Link de Facebook</label>
+                                    <input type="url" name="url_facebook" asp-for="url_facebook" class="form-control axcan-input" placeholder="https://facebook.com/tu-pagina">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="text-muted small fw-bold"><i class="bi bi-instagram text-danger"></i> Link de Instagram</label>
+                                    <input type="url" name="url_instagram" asp-for="url_instagram" class="form-control axcan-input" placeholder="https://instagram.com/tu_perfil">
+                                </div>
+
+                                <div class="mb-4 mt-4">
+                                    <label class="text-muted small fw-bold">Plantilla Base</label>
                                     <select asp-for="id_plantilla" id="live-plantilla" class="form-select axcan-input">
                                         <option value="1">Plantilla 1 (Reserva)</option>
                                         <option value="2">Plantilla 2 (Informativa)</option>
                                     </select>
                                 </div>
-                                <button type="submit" class="btn btn-gold w-100 py-3 shadow">GUARDAR CAMBIOS</button>
+                                <button type="submit" class="btn btn-gold w-100 py-3 shadow">GUARDAR DISEÑO</button>
                             </form>
                         </div>
                     </div>
-                    <div class="card card-custom p-4 mt-3">
-    <h6 class="text-warning mb-3">Añadir a la Galería</h6>
-    <form asp-action="SubirFotoGaleria" method="post" enctype="multipart/form-data">
-        <input type="hidden" name="idEmpresa" value="@Model.id_empresa" />
-        <div class="input-group">
-            <input type="file" name="archivoGaleria" class="form-control axcan-input" required>
-            <button class="btn btn-gold" type="submit">Subir</button>
-        </div>
-    </form>
-</div>
+                    
                     <div class="col-lg-5">
                         <div class="phone-mockup shadow-lg">
                             <div class="bg-success text-white text-center py-1 small fw-bold">LIVE PREVIEW</div>
@@ -243,38 +266,40 @@
                 </div>
             </div>
         }
-    </main><div class="modal fade" id="modalAddServicio" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content bg-dark border-warning">
-            <form asp-action="GuardarServicio" method="post">
-                <div class="modal-body p-4">
-                    <h5 class="text-warning mb-3">Nuevo Servicio</h5>
-                    <input type="hidden" name="id_empresa" value="@Model.id_empresa" />
-                    <input type="text" name="nombre_servicio" class="form-control axcan-input mb-2" placeholder="Nombre del Servicio" required>
-                    <input type="number" step="0.01" name="precio" class="form-control axcan-input mb-2" placeholder="Precio $" required>
-                    <input type="number" name="duracion_minutos" class="form-control axcan-input mb-3" placeholder="Duración (minutos)" required>
-                    <button type="submit" class="btn btn-gold w-100">Guardar Servicio</button>
-                </div>
-            </form>
+    </main>
+
+    <div class="modal fade" id="modalAddServicio" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark border-warning">
+                <form asp-controller="Admin" asp-action="CrearServicio" method="post">
+                    <div class="modal-body p-4">
+                        <h5 class="text-warning mb-3">Nuevo Servicio</h5>
+                        <input type="hidden" name="id_empresa" value="@Model.id_empresa" />
+                        <input type="text" name="nombre_servicio" class="form-control axcan-input mb-2" placeholder="Nombre del Servicio" required>
+                        <input type="number" step="0.01" name="precio" class="form-control axcan-input mb-2" placeholder="Precio $" required>
+                        <input type="number" name="duracion_minutos" class="form-control axcan-input mb-3" placeholder="Duración (minutos)" required>
+                        <button type="submit" class="btn btn-gold w-100">Guardar Servicio</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
-</div>
+
     <div class="modal fade" id="modalAddEquipo" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content bg-dark border-warning">
-                <form asp-action="AgregarPersonal" method="post">
+                <form asp-controller="Home" asp-action="AgregarPersonal" method="post">
                     <div class="modal-body p-4">
                         <h5 class="text-warning mb-3">Vincular Usuario</h5>
                         <input type="hidden" name="idEmpresa" value="@Model.id_empresa" />
-                        <label class="small fw-bold">Username de Axcan</label>
+                        <label class="small fw-bold text-muted">Username de Axcan</label>
                         <input type="text" name="usernameBusqueda" class="form-control axcan-input mb-3" placeholder="Ej: karla_admin" required>
-                        
-                        <label class="small fw-bold">Asignar Rol</label>
+                        <label class="small fw-bold text-muted">Asignar Rol</label>
                         <select name="subrol" class="form-select axcan-input mb-4">
                             <option value="prestador">Prestador (Especialista)</option>
                             <option value="secretario">Secretario (Solo Agenda)</option>
                         </select>
-                        <button class="btn btn-gold w-100">Vincular al Equipo</button>
+                        <button type="submit" class="btn btn-gold w-100">Vincular al Equipo</button>
                     </div>
                 </form>
             </div>
@@ -285,7 +310,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
 
     <script>
-        // SPA NAVEGACIÓN
         document.querySelectorAll('.nav-link[href^="#"]').forEach(link => {
             link.addEventListener('click', function(e) {
                 e.preventDefault();
@@ -296,16 +320,8 @@
             });
         });
 
-        // LÓGICA DE GRÁFICAS
         let miGrafica;
         document.addEventListener("DOMContentLoaded", function() {
-            // Cargar datos reales de la base de datos al iniciar
-fetch(`/Home/GetDatosGraficas?idEmpresa=@Model.id_empresa`)
-    .then(r => r.json())
-    .then(data => {
-        miGrafica.data.datasets[0].data = data.citasPorDia;
-        miGrafica.update();
-    });
             let ctx = document.getElementById('grafica-principal').getContext('2d');
             miGrafica = new Chart(ctx, {
                 type: 'bar',
@@ -314,29 +330,41 @@ fetch(`/Home/GetDatosGraficas?idEmpresa=@Model.id_empresa`)
                     datasets: [{
                         label: 'Citas',
                         backgroundColor: "#D4AF37",
-                        data: [12, 19, 3, 5, 2, 3, 10]
+                        data: [0, 0, 0, 0, 0, 0, 0] 
                     }]
                 },
                 options: { responsive: true, maintainAspectRatio: false }
             });
 
-            // Conectar botones de filtro
+            fetch(`/Home/GetDatosGraficas?idEmpresa=@Model.id_empresa`)
+                .then(r => r.json())
+                .then(data => {
+                    if(data.citasPorDia) {
+                        miGrafica.data.datasets[0].data = data.citasPorDia;
+                        miGrafica.update();
+                    }
+                }).catch(e => console.log("Error cargando gráfica:", e));
+
             document.getElementById('btn-grafica-cancelaciones').onclick = () => {
-                miGrafica.data.datasets[0].data = [1, 0, 2, 0, 1, 3, 1];
+                miGrafica.data.datasets[0].data = [1, 0, 2, 0, 1, 3, 1]; 
                 miGrafica.data.datasets[0].backgroundColor = "#dc3545";
                 miGrafica.data.datasets[0].label = 'Cancelaciones';
                 miGrafica.update();
             };
 
             document.getElementById('btn-grafica-citas').onclick = () => {
-                miGrafica.data.datasets[0].data = [12, 19, 3, 5, 2, 3, 10];
-                miGrafica.data.datasets[0].backgroundColor = "#D4AF37";
-                miGrafica.data.datasets[0].label = 'Citas';
-                miGrafica.update();
+                fetch(`/Home/GetDatosGraficas?idEmpresa=@Model.id_empresa`)
+                    .then(r => r.json())
+                    .then(data => {
+                        miGrafica.data.datasets[0].data = data.citasPorDia || [12, 19, 3, 5, 2, 3, 10];
+                        miGrafica.data.datasets[0].backgroundColor = "#D4AF37";
+                        miGrafica.data.datasets[0].label = 'Citas';
+                        miGrafica.update();
+                    });
             };
 
-            // LIVE PREVIEW LOGIC
             const iframe = document.getElementById('iframeDemo');
+            
             document.getElementById('live-nombre').addEventListener('input', (e) => {
                 const h1 = iframe.contentWindow.document.querySelector('h1');
                 if(h1) h1.innerText = e.target.value;
@@ -345,7 +373,6 @@ fetch(`/Home/GetDatosGraficas?idEmpresa=@Model.id_empresa`)
             document.getElementById('live-color').addEventListener('input', (e) => {
                 const root = iframe.contentWindow.document.documentElement;
                 root.style.setProperty('--brand-color', e.target.value);
-                iframe.contentWindow.document.querySelectorAll('.btn-reserve, .btn-premium').forEach(b => b.style.backgroundColor = e.target.value);
             });
 
             document.getElementById('live-desc').addEventListener('input', (e) => {
@@ -354,262 +381,9 @@ fetch(`/Home/GetDatosGraficas?idEmpresa=@Model.id_empresa`)
             });
 
             document.getElementById('live-plantilla').addEventListener('change', () => {
-                iframe.src = iframe.src;
+                iframe.src = iframe.src; 
             });
         });
-
-        function actualizarIframe() {
-            document.getElementById('iframeDemo').src = document.getElementById('iframeDemo').src;
-        }
-        // Dentro de tu <script> en Admin.cshtml
-document.addEventListener("DOMContentLoaded", function() {
-    const idEmpresa = "@Model.id_empresa"; // El ID de la empresa del admin
-    
-    fetch(`/Home/GetDatosGraficas?idEmpresa=${idEmpresa}`)
-        .then(response => response.json())
-        .then(data => {
-            // Actualizar gráfica de barras (Citas por día)
-            miGrafica.data.datasets[0].data = data.citasPorDia;
-            miGrafica.update();
-            
-            // Si tienes una gráfica de pastel para la proporción:
-            // miGraficaDona.data.datasets[0].data = data.proporcion;
-        });
-});
     </script>
-
-
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js"></script>
-    
-    <script>
-        var xValues = ["Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sábado"];
-        var yValues = [55, 49, 44, 24, 15, 10, 15];
-        var barColors = ["red", "green","blue","orange","brown", "pink", "white"];
-
-
-        const barChart1 = new Chart("grafica-semana-actual", {
-        type: "bar",
-        data: {
-            labels: xValues,
-            datasets: [{
-            backgroundColor: barColors,
-            data: yValues
-            }]
-        },
-        options: {
-            scales: {
-                xAxes: [{
-                    time: {
-                    unit: 'number'
-                    },
-                    gridLines: {
-                    display: false
-                    },
-                    ticks: {
-                    maxTicksLimit: 6
-                    }
-                }],
-                yAxes: [{
-                    ticks: {
-                    min: 1,
-                    //max: 50,
-                    maxTicksLimit: 5
-                    },
-                    gridLines: {
-                    display: true
-                    }
-                }],
-            },
-            legend: {display: false},
-            title: {
-            display: true,
-            text: ""
-            }
-        }
-        });
-    </script>
-
-
-    <script>
-
-                
-        var xValues = ["Citas agendadas", "Citas canceladas"];
-        var yValues = [55, 49];
-        var barColors = [
-        "#b91d47",
-        "#00aba9"
-        ];
-
-        const pieChart = new Chart("grafica-citas_canceladas", {
-        type: "pie",
-        data: {
-            labels: xValues,
-            datasets: [{
-            backgroundColor: barColors,
-            data: yValues
-            }]
-        },
-        options: {
-            title: {
-            display: true,
-            text: ""
-            }
-        }
-        });
-    </script>
-
-
-
-    <script>
-        var xValues = ["Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sábado"];
-        var yValues = [55, 49, 44, 24, 15, 10, 5];
-        var barColors = ["red", "green","blue","orange","brown", "pink", "white"];
-
-
-        const barChart2 = new Chart("grafica-dia_popular", {
-        type: "bar",
-        data: {
-            labels: xValues,
-            datasets: [{
-            backgroundColor: barColors,
-            data: yValues
-            }]
-        },
-        options: {
-            scales: {
-                xAxes: [{
-                    time: {
-                    unit: 'number'
-                    },
-                    gridLines: {
-                    display: false
-                    },
-                    ticks: {
-                    maxTicksLimit: 6
-                    }
-                }],
-                yAxes: [{
-                    ticks: {
-                    min: 1,
-                    maxTicksLimit: 5
-                    },
-                    gridLines: {
-                    display: true
-                    }
-                }],
-            },
-            legend: {display: false},
-            title: {
-            display: true,
-            text: ""
-            }
-        }
-        });
-    </script>
-
-    <script>
-
-        let estado = 0;
-
-
-        const botonCitasSemana = document.getElementById("btn-semana_actual");
-        botonCitasSemana.addEventListener("click", () => {
-        estado = 1;
-        mostrarGrafica(estado);
-        });
-
-
-        const botonCitasCanceladas = document.getElementById("btn-citas_canceladas");
-        botonCitasCanceladas.addEventListener("click", () => {
-        estado = 2;
-        mostrarGrafica(estado);
-        });
-
-
-        const botonCitasTotales = document.getElementById("btn-dia_popular");
-        botonCitasTotales.addEventListener("click", () => {
-        estado = 3;
-        mostrarGrafica(estado);
-        });
-
-
-        function mostrarGrafica(estado) {
-
-            const btnCitasSemana = document.getElementById("btn-semana_actual");
-            const btnCitasCanceladas = document.getElementById("btn-citas_canceladas");
-            const btnCitasTotales = document.getElementById("btn-dia_popular");
-            
-            const divGraficaCitasSemana = document.getElementById("grafica_barras-citas-semana_actual");
-            const divGraficaProporcionCancelar = document.getElementById("grafica_pastel-citas-canceladas");
-            const divGraficaDiaPopular = document.getElementById("grafica_barras-dia_mas_popular");
-            
-
-            const pt = "padding-top"
-
-            if(estado == 1) {
-                btnCitasSemana.removeAttribute("class");
-                btnCitasSemana.setAttribute("class", "btn btn-primary active");
-
-                btnCitasCanceladas.removeAttribute("class");
-                btnCitasCanceladas.setAttribute("class", "btn btn-primary");
-
-                btnCitasTotales.removeAttribute("class");
-                btnCitasTotales.setAttribute("class", "btn btn-primary");
-
-
-                divGraficaCitasSemana.style.display = "block";
-                divGraficaProporcionCancelar.style.display = "none";
-                divGraficaDiaPopular.style.display = "none";
-
-                /*divGraficaCitasSemana.style.paddingTop = "5px"
-                divGraficaProporcionCancelar.style.paddingTop = "5px";
-                divGraficaDiaPopular.style.paddingTop = "5px";*/
-
-
-                console.warn(estado);
-            } else if(estado == 2) {
-
-                btnCitasSemana.removeAttribute("class");
-                btnCitasSemana.setAttribute("class", "btn btn-primary");
-
-                btnCitasCanceladas.removeAttribute("class");
-                btnCitasCanceladas.setAttribute("class", "btn btn-primary active");
-
-                btnCitasTotales.removeAttribute("class");
-                btnCitasTotales.setAttribute("class", "btn btn-primary");
-
-
-                divGraficaCitasSemana.style.display = "none";
-                divGraficaProporcionCancelar.style.display = "block";
-                divGraficaDiaPopular.style.display = "none";
-
-
-                console.warn(estado);
-            } else if(estado == 3) {
-                
-                btnCitasSemana.removeAttribute("class");
-                btnCitasSemana.setAttribute("class", "btn btn-primary");
-
-                btnCitasCanceladas.removeAttribute("class");
-                btnCitasCanceladas.setAttribute("class", "btn btn-primary");
-
-                btnCitasTotales.removeAttribute("class");
-                btnCitasTotales.setAttribute("class", "btn btn-primary active");
-
-
-                divGraficaCitasSemana.style.display = "none";
-                divGraficaProporcionCancelar.style.display = "none";
-                divGraficaDiaPopular.style.display = "block";
-
-
-                console.warn(estado);
-            } else {
-
-                console.error("El estado es desconocido\n" + estado);
-            }
-        }
-    </script>
-    
 </body>
 </html>
