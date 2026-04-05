@@ -33,18 +33,28 @@
             </button>
 
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
+                <ul class="navbar-nav me-auto align-items-lg-center">
                     <li class="nav-item">
-             <li class="nav-item">
-    <a class="nav-link" asp-controller="Home" asp-action="AcercaDe">Acerca de Koi Labs</a>
-</li>
-@if (Context.Session.GetString("UsuarioRol") == "empleado" || ViewBag.EsStaff == true)
-{
-    <a asp-action="Secretario" class="btn btn-warning rounded-pill px-4 shadow-sm">
-        <i class="bi bi-person-badge"></i> Panel de Trabajo
-    </a>
-}
+                        <a class="nav-link" asp-controller="Home" asp-action="AcercaDe">Acerca de Koi Labs</a>
                     </li>
+                    
+                    @if (Context.Session.GetInt32("UsuarioId") != null)
+                    {
+                        <li class="nav-item ms-lg-2 my-2 my-lg-0">
+                            <a class="btn btn-warning text-dark px-3 rounded-pill fw-bold shadow-sm" asp-controller="Cita" asp-action="MisCitas">
+                                <i class="bi bi-calendar-check"></i> Mis Citas
+                            </a>
+                        </li>
+                    }
+
+                    @if (Context.Session.GetString("UsuarioRol") == "empleado" || ViewBag.EsStaff == true)
+                    {
+                        <li class="nav-item ms-lg-2 my-2 my-lg-0">
+                            <a asp-action="Secretario" class="btn btn-info text-dark rounded-pill px-4 shadow-sm fw-bold">
+                                <i class="bi bi-person-badge"></i> Panel de Trabajo
+                            </a>
+                        </li>
+                    }
                 </ul>
                 
                 <div class="d-flex align-items-center gap-3">
@@ -68,10 +78,10 @@
                     }
                     else
                     {
-                        <a asp-action="login" class="nav-link">Entrar</a>
+                        <a asp-action="login" class="nav-link fw-bold">Entrar</a>
                     }
 
-                    @* BOTÓN DE REGISTRO / ACCIÓN *@
+                    @* BOTÓN DE REGISTRO DE NEGOCIO *@
                     @if (Context.Session.GetString("UsuarioRol") != "administrador")
                     {
                         <a asp-controller="Home" asp-action="registronegocio" class="btn btn-primary rounded-pill px-4 fw-bold">
@@ -87,15 +97,13 @@
         @RenderBody()
     </main>
 
-   <footer class="bg-dark text-center py-4 mt-auto">
-    <div class="container">
-       
-        
-        <p class="small mb-0" style="color: var(--gold-axcan);">
-            © @DateTime.Now.Year AXCAN · Todos los derechos reservados · Koi Labs
-        </p>
-    </div>
-</footer>
+    <footer class="bg-dark text-center py-4 mt-auto">
+        <div class="container">
+            <p class="small mb-0" style="color: var(--gold-axcan);">
+                © @DateTime.Now.Year AXCAN · Todos los derechos reservados · Koi Labs
+            </p>
+        </div>
+    </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     @await RenderSectionAsync("Scripts", required: false)

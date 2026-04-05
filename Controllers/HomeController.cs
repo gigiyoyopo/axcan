@@ -489,30 +489,33 @@ public async Task<IActionResult> ProcesarRegistro(Usuario u)
         // =======================================================
         // VISTAS DEL CLIENTE Y RESERVAS (CITAS)
         // =======================================================
-        [HttpGet("reservar/{nombreUrl}")]
-        public async Task<IActionResult> PaginaCliente(string nombreUrl)
-        {
-            var empresa = await _context.empresas
-                .FirstOrDefaultAsync(e => e.nombre_empresa.Replace(" ", "-").ToLower() == nombreUrl.ToLower());
-            
-            if (empresa == null) return NotFound();
+  [HttpGet("reservar/{nombreUrl}")]
+public async Task<IActionResult> PaginaCliente(string nombreUrl)
+{
+    var empresa = await _context.empresas
+        .FirstOrDefaultAsync(e => e.nombre_empresa.Replace(" ", "-").ToLower() == nombreUrl.ToLower());
+    
+    if (empresa == null) return NotFound();
 
-            ViewBag.Servicios = await _context.servicios.Where(s => s.id_empresa == empresa.id_empresa && s.activo).ToListAsync();
-            ViewBag.Personal = await (from s in _context.secretarios
-                                       join us in _context.usuarios on s.id_usuario equals us.id_usuario
-                                       where s.id_empresa == empresa.id_empresa && s.subrol == "prestador"
-                                       select new { us.nombre, s.id_secretario }).ToListAsync();
-            
-            ViewBag.Resenas = await (from r in _context.resenas
-                                      join us in _context.usuarios on r.id_usuario equals us.id_usuario
-                                      where r.id_empresa == empresa.id_empresa
-                                      select new { r.comentario, r.calificacion, us.nombre, us.foto_url }).ToListAsync();
+    ViewBag.Servicios = await _context.servicios.Where(s => s.id_empresa == empresa.id_empresa && s.activo).ToListAsync();
+    
+    ViewBag.Personal = await (from s in _context.secretarios
+                               join us in _context.usuarios on s.id_usuario equals us.id_usuario
+                               where s.id_empresa == empresa.id_empresa && s.subrol == "prestador"
+                               select new { us.nombre, s.id_secretario }).ToListAsync();
 
-            ViewBag.Galeria = await _context.galeria_fotos.Where(g => g.id_empresa == empresa.id_empresa).ToListAsync();
+    ViewBag.Resenas = await (from r in _context.resenas
+                              join us in _context.usuarios on r.id_usuario equals us.id_usuario
+                              where r.id_empresa == empresa.id_empresa
+                              select new { r.comentario, r.calificacion, us.nombre, us.foto_url }).ToListAsync();
 
-            return View(empresa.id_plantilla == 2 ? "Plantilla_2" : "Plantilla_1", empresa);
-        }
+    ViewBag.Galeria = await _context.galeria_fotos.Where(g => g.id_empresa == empresa.id_empresa).ToListAsync();
 
+    // NUEVO: Calculamos el total de citas para el contador (ignorando las canceladas)
+    ViewBag.TotalCitas = await _context.citas.CountAsync(c => c.id_empresa == empresa.id_empresa && c.estatus != "cancelada");
+
+    return View(empresa.id_plantilla == 2 ? "Plantilla_2" : "Plantilla_1", empresa);
+}
         [HttpGet]
         public async Task<IActionResult> GetHorariosDisponibles(int idEmpresa, DateTime fecha)
         {
@@ -593,24 +596,39 @@ public async Task<IActionResult> ProcesarRegistro(Usuario u)
             }
         }
 
-        [HttpPost]
-        public async Task<IActionResult> GuardarResena(int id_empresa, int calificacion, string? comentario)
-        {
-            var userId = HttpContext.Session.GetInt32("UsuarioId");
-            if (userId == null) return Json(new { success = false });
+      [HttpPost]
+public async Task<IActionResult> GuardarResena(int id_empresa, int calificacion, string? comentario)
+{
+    try 
+    {
+        var userId = HttpContext.Session.GetInt32("UsuarioId");
+        if (userId == null) 
+            return Json(new { success = false, mensaje = "Tu sesión caducó. Por favor, vuelve a iniciar sesión." });
 
-            var nueva = new Resena {
-                id_empresa = id_empresa,
-                id_usuario = userId.Value,
-                calificacion = calificacion,
-                comentario = comentario ?? "",
-                fecha = DateTime.Now
-            };
-            _context.resenas.Add(nueva);
-            await _context.SaveChangesAsync();
-            return Json(new { success = true });
-        }
+        var nueva = new Resena {
+            id_empresa = id_empresa,
+            id_usuario = userId.Value,
+            calificacion = calificacion,
+            comentario = comentario ?? "",
+            fecha = DateTime.Now
+        };
 
+        // Forzamos el guardado ignorando validaciones estrictas de campos nulos extra
+        ModelState.Clear(); 
+        
+        _context.resenas.Add(nueva);
+        await _context.SaveChangesAsync();
+        
+        return Json(new { success = true });
+    }
+    catch (Exception ex) 
+    {
+        // Extraemos el error real de la base de datos (Supabase)
+        string errorReal = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+        Console.WriteLine("\n\n❌ ERROR AL GUARDAR RESEÑA: " + errorReal + "\n\n");
+        return Json(new { success = false, mensaje = errorReal });
+    }
+}
         // =======================================================
         // APIs ESTADÍSTICAS Y GRÁFICAS
         // =======================================================

@@ -1,0 +1,77 @@
+@model IEnumerable<axcan.Models.Cita>
+@{
+    ViewData["Title"] = "Mis Citas Agendadas";
+}
+
+<nav class="navbar navbar-dark bg-dark mb-4 shadow">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="/"><i class="bi bi-calendar-check text-warning"></i> AXCAN</a>
+        <a href="/" class="btn btn-outline-light btn-sm rounded-pill"><i class="bi bi-house"></i> Volver al Buscador</a>
+    </div>
+</nav>
+
+<div class="container pb-5">
+    <div class="row mb-4">
+        <div class="col-12 text-center">
+            <h2 class="fw-bold">Mis Citas Agendadas</h2>
+            <p class="text-muted">Aquí puedes gestionar tus próximas reservas.</p>
+        </div>
+    </div>
+
+    @if (TempData["Exito"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["Exito"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            @if (Model != null && Model.Any())
+            {
+                <div class="list-group shadow-sm">
+                    @foreach (var cita in Model)
+                    {
+                        var esCancelada = cita.estatus.ToLower() == "cancelada";
+                        <div class="list-group-item list-group-item-action p-4 border-0 mb-2 rounded-4 shadow-sm @(esCancelada ? "bg-light opacity-75" : "")">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="fw-bold mb-1 text-primary">@cita.fecha.ToString("dd/MM/yyyy") a las @cita.hora</h5>
+                                    <p class="text-muted mb-0"><i class="bi bi-shop"></i> Estado: 
+                                        <span class="badge @(esCancelada ? "bg-danger" : "bg-success")">@cita.estatus.ToUpper()</span>
+                                    </p>
+                                </div>
+                                @if (!esCancelada)
+                                {
+                                    <form asp-controller="Cita" asp-action="Cancelar" method="post" onsubmit="return confirm('¿Estás seguro de que deseas cancelar esta cita?');">
+                                        <input type="hidden" name="id_cita" value="@cita.id_cita" />
+                                        <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-bold">
+                                            <i class="bi bi-x-circle"></i> Cancelar
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info border-0 shadow-sm rounded-4 text-center p-5">
+                    <i class="bi bi-calendar-x fs-1 text-primary mb-3 d-block"></i>
+                    <h5 class="fw-bold">No tienes citas agendadas</h5>
+                    <p class="text-muted">Busca un negocio y agenda tu primera cita para que aparezca aquí.</p>
+                    <a href="/" class="btn btn-primary rounded-pill px-4 mt-2 fw-bold shadow">Explorar Negocios</a>
+                </div>
+            }
+        </div>
+    </div>
+</div>

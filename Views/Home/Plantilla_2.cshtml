@@ -1,3 +1,4 @@
+@using Microsoft.AspNetCore.Http
 @model axcan.Models.Empresa
 @{
     Layout = null;
@@ -16,52 +17,31 @@
         :root { --brand-color: @colorTema; }
         body { background-color: #fcfcfc; font-family: 'Poppins', sans-serif; color: #222; }
         
-        /* 1. Hero Refinado */
-        .header-gallery { height: 55vh; position: relative; overflow: hidden; border-radius: 0 0 50px 50px; }
-        .galeria-img-full { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.5); }
-        
-        .floating-info { 
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            text-align: center; color: white; z-index: 10; width: 90%;
-        }
+        .header-gallery { height: 55vh; position: relative; overflow: hidden; border-radius: 0 0 50px 50px; background: #000; }
+        .hero-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 4px; width: 100%; height: 100%; }
+        .hero-grid img { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.6); transition: filter 0.3s; }
+        .hero-grid img:hover { filter: brightness(0.9); }
+        .hg-1 { grid-column: 1 / 2; grid-row: 1 / 3; }
+        .hg-2 { grid-column: 2 / 4; grid-row: 1 / 2; }
+        .hg-3 { grid-column: 2 / 3; grid-row: 2 / 3; }
+        .hg-4 { grid-column: 3 / 4; grid-row: 2 / 3; }
 
-        /* 2. Tarjetas de Servicios Visuales */
-        .service-card {
-            background: white; border: 2px solid #f0f0f0; border-radius: 20px;
-            padding: 20px; transition: 0.3s; cursor: pointer; text-align: center;
-        }
+        .floating-info { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: white; z-index: 10; width: 90%; background: rgba(0,0,0,0.3); padding: 40px; border-radius: 30px; backdrop-filter: blur(5px); }
+        .service-card { background: white; border: 2px solid #f0f0f0; border-radius: 20px; padding: 20px; transition: 0.3s; cursor: pointer; text-align: center; }
         .service-card:hover { border-color: var(--brand-color); transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
         .service-card.active { border-color: var(--brand-color); background: rgba(0,0,0,0.02); }
         .service-card i { font-size: 2rem; color: var(--brand-color); }
 
-        /* 3. Sidebar de Reserva Estilo Minimal */
-        .booking-sidebar { 
-            position: sticky; top: 20px; 
-            border-radius: 35px; border: none; 
-            background: white; padding: 40px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
-        }
-
-        .section-title { 
-            font-weight: 800; text-transform: uppercase; letter-spacing: 3px; 
-            color: var(--brand-color); margin-bottom: 25px; font-size: 0.9rem;
-        }
-
-        .chip-hora { 
-            border: 1px solid #eee; padding: 12px 20px; border-radius: 15px; 
-            cursor: pointer; transition: 0.3s; background: #fff; font-weight: 500;
-        }
+        .booking-sidebar { position: sticky; top: 20px; border-radius: 35px; border: none; background: white; padding: 40px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); }
+        .section-title { font-weight: 800; text-transform: uppercase; letter-spacing: 3px; color: var(--brand-color); margin-bottom: 25px; font-size: 0.9rem; }
+        .chip-hora { border: 1px solid #eee; padding: 12px 20px; border-radius: 15px; cursor: pointer; transition: 0.3s; background: #fff; font-weight: 500; }
         .chip-hora:hover { border-color: var(--brand-color); }
         .chip-hora.active { background-color: var(--brand-color); color: white; border-color: var(--brand-color); }
-
-        .review-card {
-            background: #fff; border-radius: 25px; padding: 25px; margin-bottom: 20px;
-            border-bottom: 4px solid var(--brand-color); box-shadow: 0 5px 15px rgba(0,0,0,0.02);
-        }
-        
+        .review-card { background: #fff; border-radius: 25px; padding: 25px; margin-bottom: 20px; border-bottom: 4px solid var(--brand-color); box-shadow: 0 5px 15px rgba(0,0,0,0.02); }
         .map-container { height: 400px; border-radius: 40px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
         .btn-reserve-final { background: var(--brand-color); color: white; border-radius: 50px; border: none; padding: 15px; font-weight: bold; width: 100%; transition: 0.3s; }
         .btn-reserve-final:hover { filter: brightness(1.2); transform: scale(1.02); }
+        .star-rating i { cursor: pointer; transition: 0.2s; }
     </style>
 </head>
 <body>
@@ -70,27 +50,18 @@
         <i class="bi bi-chevron-left"></i> Volver
     </a>
 
-    <a asp-controller="Citas" asp-action="MisCitas" class="btn rounded-pill shadow text-white" style="position: fixed; top: 20px; right: 20px; z-index: 1000; padding: 12px 25px; font-weight: 600; background-color: var(--brand-color);">
-        <i class="bi bi-calendar-check"></i> Mis Citas
-    </a>
-
     <section class="header-gallery">
-        <div id="p2Carousel" class="carousel slide carousel-fade h-100" data-bs-ride="carousel">
-            <div class="carousel-inner h-100">
-                @if (ViewBag.Galeria != null && ((IEnumerable<dynamic>)ViewBag.Galeria).Any()) {
-                    bool isFirst = true;
-                    foreach (var img in ViewBag.Galeria) {
-                        <div class="carousel-item h-100 @(isFirst ? "active" : "")">
-                            <img src="@img.url" class="galeria-img-full">
-                        </div>
-                        isFirst = false;
-                    }
-                } else {
-                    <div class="carousel-item active h-100">
-                        <img src="@Model.banner_url" class="galeria-img-full">
-                    </div>
-                }
-            </div>
+        <div class="hero-grid">
+            @{
+                var galeria = ViewBag.Galeria as IEnumerable<dynamic>;
+                var imgs = new List<string>();
+                if(galeria != null) { foreach(var f in galeria) { if(imgs.Count < 4) imgs.Add(f.url); } }
+                while(imgs.Count < 4) { imgs.Add(Model.banner_url); }
+            }
+            <img src="@imgs[0]" class="hg-1">
+            <img src="@imgs[1]" class="hg-2">
+            <img src="@imgs[2]" class="hg-3">
+            <img src="@imgs[3]" class="hg-4">
         </div>
         <div class="floating-info">
             <img src="@Model.logotipo_url" width="100" height="100" class="rounded-circle border border-4 border-white mb-4 shadow-lg" style="object-fit: cover;">
@@ -102,18 +73,24 @@
     <div class="container mt-5 pt-4">
         <div class="row g-5">
             <div class="col-lg-7">
+
+                <div class="d-flex align-items-center justify-content-start gap-4 mb-5">
+                    <div class="p-3 bg-light rounded-circle text-center" style="width: 80px; height: 80px;">
+                        <i class="bi bi-person-check fs-2" style="color: var(--brand-color);"></i>
+                    </div>
+                    <div>
+                        <h2 class="fw-bold mb-0"><span class="counter-citas" data-target="@ViewBag.TotalCitas">0</span>+</h2>
+                        <span class="text-muted text-uppercase tracking-widest small fw-bold">Clientes Atendidos</span>
+                    </div>
+                </div>
+
                 <div class="mb-5">
                     <p class="section-title">Nuestra Esencia</p>
                     <h2 class="fw-bold mb-4">Experiencias diseñadas para ti.</h2>
                     <p class="text-muted fs-5 lh-lg" style="white-space: pre-line;">@Model.descripcion</p>
-                    
                     <div class="d-flex gap-4 mt-4">
-                        @if (!string.IsNullOrEmpty(Model.url_facebook)) {
-                            <a href="@Model.url_facebook" target="_blank" class="fs-2 transition" style="color: var(--brand-color);"><i class="bi bi-facebook"></i></a>
-                        }
-                        @if (!string.IsNullOrEmpty(Model.url_instagram)) {
-                            <a href="@Model.url_instagram" target="_blank" class="fs-2 transition" style="color: var(--brand-color);"><i class="bi bi-instagram"></i></a>
-                        }
+                        @if (!string.IsNullOrEmpty(Model.url_facebook)) { <a href="@Model.url_facebook" target="_blank" class="fs-2 transition" style="color: var(--brand-color);"><i class="bi bi-facebook"></i></a> }
+                        @if (!string.IsNullOrEmpty(Model.url_instagram)) { <a href="@Model.url_instagram" target="_blank" class="fs-2 transition" style="color: var(--brand-color);"><i class="bi bi-instagram"></i></a> }
                     </div>
                 </div>
 
@@ -130,8 +107,6 @@
                                     </div>
                                 </div>
                             }
-                        } else {
-                            <p class="text-muted">No hay servicios disponibles.</p>
                         }
                     </div>
                     <input type="hidden" id="p2-servicio-val">
@@ -144,6 +119,30 @@
 
                 <div class="mb-5">
                     <p class="section-title">Opiniones</p>
+
+                    @if (Context.Session.GetInt32("UsuarioId") != null)
+                    {
+                        <div class="review-card bg-light border-0">
+                            <h6 class="fw-bold mb-3">Cuéntanos tu experiencia</h6>
+                            <div class="star-rating text-warning fs-3 mb-3" id="estrellas-p2">
+                                <i class="bi bi-star-fill" data-val="1"></i>
+                                <i class="bi bi-star-fill" data-val="2"></i>
+                                <i class="bi bi-star-fill" data-val="3"></i>
+                                <i class="bi bi-star-fill" data-val="4"></i>
+                                <i class="bi bi-star-fill" data-val="5"></i>
+                            </div>
+                            <input type="hidden" id="calif-p2" value="5">
+                            <textarea id="coment-p2" class="form-control mb-3 border-0 shadow-sm rounded-4 p-3" placeholder="Tu opinión ayuda a otros clientes..." rows="2"></textarea>
+                            <button class="btn btn-dark rounded-pill px-5 fw-bold" onclick="enviarResenaP2()">Publicar Reseña</button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-light border rounded-pill text-center mb-4">
+                            <i class="bi bi-info-circle me-2"></i> <a href="/Home/login" class="fw-bold" style="color: var(--brand-color);">Inicia sesión</a> para dejar tu opinión.
+                        </div>
+                    }
+
                     @if (ViewBag.Resenas != null) {
                         foreach (var r in ViewBag.Resenas) {
                             <div class="review-card">
@@ -166,34 +165,27 @@
             <div class="col-lg-5">
                 <div class="booking-sidebar">
                     <h3 class="fw-bold text-center mb-4">Reservar</h3>
-                    
                     <div class="mb-4">
                         <label class="small fw-bold mb-2">Especialista</label>
                         <select id="p2-staff" class="form-select border-0 bg-light p-3 rounded-4">
                             @if(ViewBag.Personal != null) {
-                                foreach(var p in ViewBag.Personal) {
-                                    <option value="@p.nombre">@p.nombre</option>
-                                }
+                                foreach(var p in ViewBag.Personal) { <option value="@p.nombre">@p.nombre</option> }
                             }
                         </select>
                     </div>
-
                     <div class="mb-4">
                         <label class="small fw-bold mb-2">Fecha</label>
                         <input type="date" id="p2-fecha" class="form-control border-0 bg-light p-3 rounded-4" min="@DateTime.Now.ToString("yyyy-MM-dd")">
                     </div>
-
                     <label class="small fw-bold mb-2">Horarios Disponibles</label>
                     <div id="p2-horas-cont" class="d-flex flex-wrap gap-2 mb-4">
                         <p class="text-muted small">Selecciona una fecha...</p>
                     </div>
-
                     <div class="bg-light p-4 rounded-4 mb-4">
                         <label class="small fw-bold mb-2 text-dark">Tus Datos</label>
-                        <input type="text" id="p2-nombre-cliente" class="form-control border-0 mb-2 p-2" placeholder="Tu Nombre" value="@Context.Session.GetString("UsuarioNombre")">
+                        <input type="text" id="p2-nombre-cliente" class="form-control border-0 mb-2 p-2" placeholder="Tu Nombre">
                         <input type="tel" id="p2-tel" class="form-control border-0 p-2" placeholder="Tu Teléfono (10 dígitos)">
                     </div>
-
                     <button onclick="agendarP2()" class="btn-reserve-final shadow-lg">CONFIRMAR CITA</button>
                 </div>
             </div>
@@ -202,14 +194,61 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // 1. MAPA DINÁMICO
+        // Animación del Contador de Citas
+        const counter = document.querySelector('.counter-citas');
+        const target = +counter.getAttribute('data-target');
+        const updateCounter = () => {
+            const c = +counter.innerText;
+            const increment = target / 30; 
+            if (c < target) {
+                counter.innerText = Math.ceil(c + increment);
+                setTimeout(updateCounter, 40);
+            } else {
+                counter.innerText = target;
+            }
+        };
+        updateCounter();
+
+        // Lógica de Estrellas para Reseñas
+        const stars = document.querySelectorAll('#estrellas-p2 i');
+        const califInput = document.getElementById('calif-p2');
+        stars.forEach(star => {
+            star.addEventListener('click', function() {
+                let val = this.getAttribute('data-val');
+                califInput.value = val;
+                stars.forEach(s => {
+                    if(s.getAttribute('data-val') <= val) {
+                        s.classList.replace('bi-star', 'bi-star-fill');
+                    } else {
+                        s.classList.replace('bi-star-fill', 'bi-star');
+                    }
+                });
+            });
+        });
+function enviarResenaP2() {
+    let fd = new FormData();
+    fd.append('id_empresa', '@Model.id_empresa');
+    fd.append('calificacion', document.getElementById('calif-p2').value);
+    fd.append('comentario', document.getElementById('coment-p2').value);
+
+    fetch('/Home/GuardarResena', { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(d => {
+        if(d.success) { 
+            alert('¡Gracias por compartir tu experiencia!'); 
+            location.reload(); 
+        } else { 
+            alert('Error de base de datos: ' + d.mensaje); 
+        }
+    })
+    .catch(e => { alert("Error de conexión. Revisa la terminal negra de .NET."); });
+}        // Lógica original del mapa y agendar...
         var lat = @(Model.ubicacion_lat != 0 ? Model.ubicacion_lat : 19.4326);
         var lng = @(Model.ubicacion_lng != 0 ? Model.ubicacion_lng : -99.1332);
         var map = L.map('mapaP2').setView([lat, lng], 16);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         L.marker([lat, lng]).addTo(map).bindPopup("<b>@Model.nombre_empresa</b>").openPopup();
 
-        // 2. SELECCIÓN DE SERVICIO
         let servicioSeleccionado = "";
         function selectService(el, name, price) {
             document.querySelectorAll('.service-card').forEach(c => c.classList.remove('active'));
@@ -217,23 +256,13 @@
             servicioSeleccionado = name;
         }
 
-        // 3. LÓGICA DE HORARIOS
         let selHora = "";
         document.getElementById('p2-fecha').addEventListener('change', function() {
-            const fechaVal = this.value;
             const idEmp = '@Model.id_empresa';
-            
-            if(!fechaVal) return;
-
-            fetch(`/Home/GetHorariosDisponibles?idEmpresa=${idEmp}&fecha=${fechaVal}`)
-            .then(r => {
-                if (!r.ok) throw new Error("Error en servidor");
-                return r.json();
-            })
-            .then(data => {
+            fetch(`/Home/GetHorariosDisponibles?idEmpresa=${idEmp}&fecha=${this.value}`)
+            .then(r => r.json()).then(data => {
                 let div = document.getElementById('p2-horas-cont');
                 div.innerHTML = ''; 
-                
                 if(data.disponibles && data.disponibles.length > 0) {
                     data.disponibles.forEach(h => {
                         let btn = document.createElement('div');
@@ -247,25 +276,16 @@
                         div.appendChild(btn);
                     });
                 } else {
-                    div.innerHTML = '<p class="text-danger small fw-bold">Sin citas disponibles para esta fecha.</p>';
+                    div.innerHTML = '<p class="text-danger small fw-bold">Sin citas disponibles</p>';
                 }
-            })
-            .catch(err => {
-                console.error(err);
-                document.getElementById('p2-horas-cont').innerHTML = '<p class="text-danger small fw-bold">Error al cargar horarios.</p>';
             });
         });
 
-        // 4. FUNCIÓN AGENDAR CORREGIDA
         function agendarP2() {
             let tel = document.getElementById('p2-tel').value;
             let staff = document.getElementById('p2-staff').value;
             let fecha = document.getElementById('p2-fecha').value;
-
-            if(!servicioSeleccionado) return alert("Por favor, selecciona un servicio dando clic en una tarjeta.");
-            if(!fecha) return alert("Falta seleccionar la fecha.");
-            if(!selHora) return alert("Elige un horario disponible.");
-            if(tel.length < 10) return alert("Escribe un teléfono válido (10 dígitos).");
+            if(!servicioSeleccionado || !fecha || !selHora || tel.length < 10) return alert("Completa todos los datos de la reserva.");
 
             let fd = new FormData();
             fd.append('id_empresa', '@Model.id_empresa');
@@ -273,28 +293,11 @@
             fd.append('hora', selHora);
             fd.append('tipo_servicio', servicioSeleccionado);
             fd.append('quien_atiende', staff);
-            
-            const btn = event.target;
-            btn.disabled = true;
-            btn.innerText = "Procesando...";
 
             fetch('/Home/AgendarCita', { method: 'POST', body: fd })
-            .then(r => r.json())
-            .then(d => {
-                if(d.success) {
-                    alert("¡Cita agendada con éxito!");
-                    // Redirección corregida hacia "Mis Citas"
-                    window.location.href = '/Citas/MisCitas';
-                } else {
-                    alert("Error: " + (d.mensaje || "No se pudo agendar."));
-                    btn.disabled = false;
-                    btn.innerText = "CONFIRMAR CITA";
-                }
-            })
-            .catch(e => {
-                alert("Error de conexión con el servidor.");
-                btn.disabled = false;
-                btn.innerText = "CONFIRMAR CITA";
+            .then(r => r.json()).then(d => {
+                if(d.success) { alert("¡Cita agendada!"); window.location.href = '/Cita/MisCitas'; }
+                else { alert("Error al agendar."); }
             });
         }
     </script>
