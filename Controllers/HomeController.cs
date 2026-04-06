@@ -450,6 +450,7 @@ public async Task<IActionResult> ProcesarRegistro(Usuario u)
         [HttpPost]
         public async Task<IActionResult> GuardarServicio(Servicio s)
         {
+            s.activo = true;
             _context.servicios.Add(s);
             await _context.SaveChangesAsync();
             return RedirectToAction("Admin");
@@ -497,8 +498,8 @@ public async Task<IActionResult> PaginaCliente(string nombreUrl)
     
     if (empresa == null) return NotFound();
 
-    ViewBag.Servicios = await _context.servicios.Where(s => s.id_empresa == empresa.id_empresa && s.activo).ToListAsync();
-    
+   ViewBag.Servicios = await _context.servicios.Where(s => s.id_empresa == empresa.id_empresa).ToListAsync();
+
     ViewBag.Personal = await (from s in _context.secretarios
                                join us in _context.usuarios on s.id_usuario equals us.id_usuario
                                where s.id_empresa == empresa.id_empresa && s.subrol == "prestador"
